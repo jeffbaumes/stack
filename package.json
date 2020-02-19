@@ -1,0 +1,19 @@
+{
+  "name": "stack",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "serve": "webpack-dev-server --watch"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "webpack": "^4.41.6",
+    "webpack-cli": "^3.3.11",
+    "webpack-dev-server": "^3.10.3"
+  },
+  "dependencies": {
+    "gl-matrix": "^3.2.1",
+    "mousetrap": "^1.6.5",
+    "simplex-noise": "^2.4.0"
+  }
+}
