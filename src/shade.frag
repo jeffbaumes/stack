@@ -25,9 +25,6 @@ out vec4 fragColor;
 
 float getVoxel(in vec3 p) {
   vec3 i = floor(p - minSize);
-  // float xi = floor(p.x - minSize.x);
-  // float yi = floor(p.y - minSize.y);
-  // float zi = floor(p.z - minSize.z);
   // return 1.0;
   if (i.x < 0.0 || i.x >= sx.0 || i.y < 0.0 || i.y >= sy.0 || i.z < 0.0 || i.z >= sz.0) {
     return 0.0;
@@ -53,21 +50,6 @@ vec3 getGradient(in vec3 p) {
     }
   }
 
-  // int xKernel[27] = int[27](
-  //   1, 1, 1,  1, 1, 1,  1, 1, 1,
-  //   0, 0, 0,  0, 0, 0,  0, 0, 0,
-  //   -1, -1, -1,  -1, -1, -1,  -1, -1, -1
-  // );
-  // int yKernel[27] = int[27](
-  //   1, 1, 1,  0, 0, 0,  -1, -1, -1,
-  //   1, 1, 1,  0, 0, 0,  -1, -1, -1,
-  //   1, 1, 1,  0, 0, 0,  -1, -1, -1
-  // );
-  // int zKernel[27] = int[27](
-  //   1, 0, -1,  1, 0, -1,  1, 0, -1,
-  //   1, 0, -1,  1, 0, -1,  1, 0, -1,
-  //   1, 0, -1,  1, 0, -1,  1, 0, -1
-  // );
   vec3 grad = vec3(0, 0, 0);
   for (int x = 0; x < 3; x += 1) {
     for (int y = 0; y < 3; y += 1) {

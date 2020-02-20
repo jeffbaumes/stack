@@ -1,4 +1,3 @@
-import '../Lib/webgl-debug';
 import frag from './shade.frag';
 
 const VERTEX_COUNT = 6;
@@ -18,7 +17,6 @@ export default class Renderer {
         this.uniforms = uniforms;
         this.vox = vox;
         this.canvas = canvas;
-        // this.gl = WebGLDebugUtils.makeDebugContext(canvas.getContext('webgl2'));
         this.gl = canvas.getContext('webgl2');
         this.uniformKeys = Object.keys(uniforms);
 
@@ -81,60 +79,6 @@ export default class Renderer {
             return obj;
         }, {}), true);
 
-
-        // Draw
-
-        // let sx = this.sx;
-        // let sy = this.sy;
-        // let sz = this.sz;
-
-        // const uniforms = [
-        //     'viewMatrixInverse',
-        //     'eye',
-        //     'xKernel',
-        //     'yKernel',
-        //     'zKernel',
-        //     'canvasWidth',
-        //     'canvasHeight',
-        //     'vox', ].reduce((obj, uniform) => {
-        //         obj[ uniform ] = regl.prop(uniform);
-        //         return obj;
-        //     }, {});
-        // for (let i = 0; i < 27; i += 1) {
-        //     uniforms[ `xKernel[${i}]` ] = regl.prop(`xKernel[${i}]`);
-        //     uniforms[ `yKernel[${i}]` ] = regl.prop(`yKernel[${i}]`);
-        //     uniforms[ `zKernel[${i}]` ] = regl.prop(`zKernel[${i}]`);
-        // }
-
-        // this.draw = regl({
-        //     vert: `
-        //         attribute vec2 a_position;
-        //         void main() {
-        //             gl_Position = vec4(a_position, 0.0, 1.0);
-        //         }`,
-        //     frag: frag.replace(/maxDist/g, this.maxDist + ".0")
-        //         .replace(/distStep/g, this.distStep)
-        //         .replace(/samples/g, this.samples)
-        //         .replace(/sx/g, sx + ".0")
-        //         .replace(/sy/g, sy + ".0")
-        //         .replace(/sz/g, sz + ".0")
-        //         .replace(/SA/g, sx * sy * sz),
-        //     attributes: {
-        //         a_position: regl.buffer([
-        //             // X, Y
-        //             -1.0, -1.0,
-        //             1.0, -1.0,
-        //             -1.0, 1.0,
-        //             -1.0, 1.0,
-        //             1.0, -1.0,
-        //             1.0, 1.0
-        //         ]),
-        //     },
-
-        //     uniforms,
-
-        //     count: 6,
-        // })
     }
 
     createFragShader() {
@@ -193,25 +137,6 @@ export default class Renderer {
             this.uniforms[ uniform ].value = value;
 
         }
-        // Object.keys(uniforms).forEach(uniform => {
-        //     const value = uniforms[ uniform ];
-        //     const type = this.uniforms[ uniform ].type;
-        //     if (!bypass && typeof value !== 'object' && this.uniforms[ uniform ].value === value) {
-        //         return;
-        //     }
-        //     if (type[ 0 ] === 'M') {
-        //         this.gl[ `uniform${type}` ](this.uniformLocations[ uniform ], false, value)
-        //     } else if (type.slice(-1) === 'v') {
-        //         this.gl[ `uniform${type}` ](this.uniformLocations[ uniform ], value)
-        //     } else {
-        //         if (typeof value === 'object') {
-        //             this.gl[ `uniform${type}` ](this.uniformLocations[ uniform ], ...value)
-        //         } else {
-        //             this.gl[ `uniform${type}` ](this.uniformLocations[ uniform ], value)
-        //         }
-        //     }
-        //     this.uniforms[ uniform ].value = value;
-        // })
     }
 
     updateVox() {

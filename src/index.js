@@ -1,16 +1,18 @@
 import Engine from './Engine';
 import { init } from 'glmw';
 
-init().then(() => {
-    const worldSize = [ 700, 700, 700 ];
+// for (let xi = 0; xi < sx; xi += 1) {
+//   for (let yi = 0; yi < sy; yi += 1) {
+//     for (let zi = 0; zi < sz; zi += 1) {
+//       if (Math.random() < 0.001 && (Math.abs(min[0] + xi) > 2 || Math.abs(min[1] + yi) > 2)) {
+//         setVoxel([min[0] + xi, min[1] + yi, min[2] + zi], Math.random() < 0.2 ? 1 : 0);
+//       }
+//     }
+//   }
+// }
 
-    // let vox = new Int32Array(1024 * 4);
-    // for (let x = 0; x < 1000; x += 1) {
-    //     vox[ 4 * x + 0 ] = 255;
-    //     vox[ 4 * x + 1 ] = 0;
-    //     vox[ 4 * x + 2 ] = 0;
-    //     vox[ 4 * x + 3 ] = 0;
-    // }
+init().then(() => {
+    const worldSize = [ 32, 32, 32 ];
 
     let vox = new Uint8Array(worldSize[ 0 ] * worldSize[ 1 ] * worldSize[ 2 ] * 4);
     for (let x = 0; x < vox.length; x += 1) {

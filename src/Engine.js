@@ -93,7 +93,7 @@ export default class Engine {
         this.forward = [ 0, 0, -1 ];
         this.right = [ 1, 0, 0 ];
         this.up = [ 0, 1, 0 ];
-        this.eye = [ 4, 30, 0 ];
+        this.eye = [ 0, 0, 0 ];
         this.look = [ 0, 0, 0 ];
         this.playerSpeed = 20;
         this.turnSpeed = 2;
@@ -163,7 +163,6 @@ export default class Engine {
         }
 
         vec3.add(this.eye, this.eye, this.movement);
-        // console.log(this.eye);
 
         if (this.keys.left) {
             vec3.rotateY(this.forward, this.forward, [ 0, 0, 0 ], dt * this.turnSpeed);
@@ -175,15 +174,7 @@ export default class Engine {
             uniforms.viewMatrixInverse.changed = true;
         }
 
-        // for (let xi = 0; xi < sx; xi += 1) {
-        //   for (let yi = 0; yi < sy; yi += 1) {
-        //     for (let zi = 0; zi < sz; zi += 1) {
-        //       if (Math.random() < 0.001 && (Math.abs(min[0] + xi) > 2 || Math.abs(min[1] + yi) > 2)) {
-        //         setVoxel([min[0] + xi, min[1] + yi, min[2] + zi], Math.random() < 0.2 ? 1 : 0);
-        //       }
-        //     }
-        //   }
-        // }
+
         vec3.add(this.look, this.eye, this.forward);
         mat4.lookAt(this.viewMatrix, this.eye, this.look, this.up);
         const aspect = this.canvas.height / this.canvas.width;
@@ -203,20 +194,6 @@ export default class Engine {
         })
 
         this.renderer.render();
-
-        // this.renderer.render({
-        //     // console.log({
-        //     vox: regl.texture([ this.vox ]),
-        //     // vox: regl.texture({
-        //     //     data: this.vox,
-        //     //     width: 1024,
-        //     //     height: 1,
-        //     // }),
-
-        //     // ...this.xKernel.reduce((obj, val, index) => { obj[ `xKernel[${index}]` ] = val; return obj; }, {}),
-        //     // ...this.yKernel.reduce((obj, val, index) => { obj[ `yKernel[${index}]` ] = val; return obj; }, {}),
-        //     // ...this.zKernel.reduce((obj, val, index) => { obj[ `zKernel[${index}]` ] = val; return obj; }, {}),
-        // });
 
         requestAnimationFrame(this.boundRenderLoop);
     }
