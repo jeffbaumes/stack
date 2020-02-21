@@ -14,9 +14,9 @@ import { init } from 'glmw';
 init().then(() => {
     const worldSize = [ 32, 32, 32 ];
 
-    let vox = new Uint8Array(worldSize[ 0 ] * worldSize[ 1 ] * worldSize[ 2 ] * 4);
-    for (let x = 0; x < vox.length; x += 1) {
-        vox[ x ] = (Math.random() > 0.5 ? 1 : 0);
+    let vox = new Uint8Array(worldSize[ 0 ] * worldSize[ 1 ] * worldSize[ 2 ] * 3);
+    for (let x = 0; x < vox.length / 3; x += 1) {
+        vox[ x * 3 ] = (x % 1 === 0 ? 1 : 0);
     }
 
     console.log('Array created')
@@ -26,7 +26,7 @@ init().then(() => {
         worldSize,
         min: [ -5, -5, -5 ],
         samples: 1,
-        maxDist: 40,
+        maxDist: 100,
         distStep: 0.25,
     })
 

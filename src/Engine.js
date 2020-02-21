@@ -69,6 +69,7 @@ export default class Engine {
         });
 
         this.vox = vox;
+        this.worldSize = worldSize;
         this.setUpMousetrap();
         this.setUpMouseXY();
     }
@@ -79,8 +80,10 @@ export default class Engine {
             this.keys[ key ] = false;
             Mousetrap.bind(key, () => this.keys[ key ] = true, 'keydown');
             Mousetrap.bind(key, () => this.keys[ key ] = false, 'keyup');
+            Mousetrap.bind(`shift+${key}`, () => this.keys[ key ] = true, 'keydown');
+            Mousetrap.bind(`shift+${key}`, () => this.keys[ key ] = false, 'keyup');
         }
-        [ 'left', 'right', 'space', 'w', 'a', 's', 'd' ].forEach(listenForKey.bind(this));
+        ['left', 'right', 'up', 'down', 'space', 'shift', 'w', 'a', 's', 'd', 'b', 'v' ].forEach(listenForKey.bind(this));
     }
 
     setUpVariables() {
@@ -93,10 +96,13 @@ export default class Engine {
         this.forward = [ 0, 0, -1 ];
         this.right = [ 1, 0, 0 ];
         this.up = [ 0, 1, 0 ];
-        this.eye = [ 0, 0, 0 ];
+        this.eye = [ 0, 32, 0 ];
         this.look = [ 0, 0, 0 ];
+        this.lookAt = [ 0, 0, 0 ];
         this.playerSpeed = 20;
         this.turnSpeed = 2;
+        this.azimuth = 0;
+        this.elevation = 0;
 
         this.xKernel = new Int32Array([
             [ [ 1, 1, 1 ], [ 1, 1, 1 ], [ 1, 1, 1 ] ],
@@ -142,7 +148,8 @@ export default class Engine {
         this.lastTime = timestamp;
 
         const uniforms = this.renderer.uniforms;
-        // update position
+
+        // Update position
         vec3.zero(this.movement);
         if (this.keys.w) {
             vec3.scale(this.movement, this.forward, dt * this.playerSpeed);
@@ -160,27 +167,81 @@ export default class Engine {
             vec3.scale(this.movement, this.right, -dt * this.playerSpeed);
             uniforms.eye.changed = true;
             uniforms.viewMatrixInverse.changed = true;
+        } else if (this.keys.space) {
+            vec3.scale(this.movement, this.up, dt * this.playerSpeed);
+            uniforms.eye.changed = true;
+            uniforms.viewMatrixInverse.changed = true;
+        } else if (this.keys.shift) {
+            vec3.scale(this.movement, this.up, -dt * this.playerSpeed);
+            uniforms.eye.changed = true;
+            uniforms.viewMatrixInverse.changed = true;
         }
 
         vec3.add(this.eye, this.eye, this.movement);
 
-        if (this.keys.left) {
-            vec3.rotateY(this.forward, this.forward, [ 0, 0, 0 ], dt * this.turnSpeed);
-            vec3.cross(this.right, this.forward, this.up);
+        // Update elevation
+        if (this.keys.up) {
+            this.elevation += dt * this.turnSpeed;
             uniforms.viewMatrixInverse.changed = true;
-        } else if (this.keys.right) {
-            vec3.rotateY(this.forward, this.forward, [ 0, 0, 0 ], -dt * this.turnSpeed);
-            vec3.cross(this.right, this.forward, this.up);
+        } else if (this.keys.down) {
+            this.elevation -= dt * this.turnSpeed;
             uniforms.viewMatrixInverse.changed = true;
         }
+        this.elevation = Math.min(Math.PI / 2 - 0.01, Math.max(-Math.PI / 2 + 0.01, this.elevation));
+        vec3.rotateX(this.look, [0, 0, -1], [0, 0, 0], this.elevation);
 
+        // Update azimuth
+        if (this.keys.left) {
+            this.azimuth += dt * this.turnSpeed;
+            uniforms.viewMatrixInverse.changed = true;
+        } else if (this.keys.right) {
+            this.azimuth -= dt * this.turnSpeed;
+            uniforms.viewMatrixInverse.changed = true;
+        }
+        vec3.rotateY(this.forward, [0, 0, -1], [0, 0, 0], this.azimuth);
+        vec3.rotateY(this.look, this.look, [0, 0, 0], this.azimuth);
+        vec3.cross(this.right, this.forward, this.up);
 
-        vec3.add(this.look, this.eye, this.forward);
-        mat4.lookAt(this.viewMatrix, this.eye, this.look, this.up);
+        vec3.add(this.lookAt, this.eye, this.look);
+        mat4.lookAt(this.viewMatrix, this.eye, this.lookAt, this.up);
         const aspect = this.canvas.height / this.canvas.width;
         mat4.frustum(this.frustum, -1, 1, -aspect, aspect, 2, 10);
         mat4.mul(this.viewMatrix, this.frustum, this.viewMatrix);
         mat4.invert(this.viewMatrixInverse, this.viewMatrix);
+
+        // Build
+        if (this.keys.b) {
+            const world = this.getWorldHit({ before: true });
+            if (world) {
+                for (let x = -5; x <= 5; x += 1) {
+                    for (let y = -5; y <= 5; y += 1) {
+                        for (let z = -5; z <= 5; z += 1) {
+                            if (x * x + y * y + z * z < 3 * 3) {
+                                this.setVoxel([world[0] + x, world[1] + y, world[2] + z], 2);
+                            }
+                        }
+                    }
+                }
+                this.renderer.updateVox();
+            }
+        }
+
+        // Delete
+        if (this.keys.v) {
+            const world = this.getWorldHit({ before: false });
+            if (world) {
+                for (let x = -5; x <= 5; x += 1) {
+                    for (let y = -5; y <= 5; y += 1) {
+                        for (let z = -5; z <= 5; z += 1) {
+                            if (x * x + y * y + z * z < 5 * 5) {
+                                this.setVoxel([world[0] + x, world[1] + y, world[2] + z], 0);
+                            }
+                        }
+                    }
+                }
+                this.renderer.updateVox();
+            }
+        }
 
 
         this.renderer.set({
@@ -202,16 +263,42 @@ export default class Engine {
         const xi = Math.floor(p[ 0 ] - this.min[ 0 ]);
         const yi = Math.floor(p[ 1 ] - this.min[ 1 ]);
         const zi = Math.floor(p[ 2 ] - this.min[ 2 ]);
-        if (xi < 0 || xi >= this.sx || yi < 0 || yi >= this.sy || zi < 0 || zi >= this.sz) {
+        if (xi < 0 || xi >= this.worldSize[0] || yi < 0 || yi >= this.worldSize[1] || zi < 0 || zi >= this.worldSize[2]) {
             return 0;
         }
-        return vox[ xi * this.sy * this.sz + yi * this.sz + zi ];
+        return this.vox[(zi * this.worldSize[0] * this.worldSize[1] + yi * this.worldSize[0] + xi) * 3];
     }
 
     setVoxel(p, val) {
-        const xi = p[ 0 ] - this.min[ 0 ];
-        const yi = p[ 1 ] - this.min[ 1 ];
-        const zi = p[ 2 ] - this.min[ 2 ];
-        this.vox[ xi * sy * sz + yi * sz + zi ] = val;
+        const xi = Math.floor(p[ 0 ] - this.min[ 0 ]);
+        const yi = Math.floor(p[ 1 ] - this.min[ 1 ]);
+        const zi = Math.floor(p[ 2 ] - this.min[ 2 ]);
+        this.vox[(zi * this.worldSize[0] * this.worldSize[1] + yi * this.worldSize[0] + xi) * 3] = val;
+    }
+
+    getWorldHit({ distStep = 0.1, maxDist = 100, before = true } = {}) {
+        const p = [0, 0, 0];
+        const world = [0, 0, 0];
+        const delta = [0, 0, 0];
+        vec3.transformMat4(world, p, this.viewMatrixInverse);
+        vec3.sub(delta, world, this.eye);
+        vec3.normalize(delta, delta);
+        vec3.scale(delta, delta, distStep);
+        vec3.copy(world, this.eye);
+        for (let d = 0; d < maxDist; d += distStep) {
+            world[0] += delta[0];
+            world[1] += delta[1];
+            world[2] += delta[2];
+            const material = this.getVoxel(world);
+            if (material) {
+                if (before) {
+                    world[0] -= delta[0];
+                    world[1] -= delta[1];
+                    world[2] -= delta[2];
+                }
+                return world;
+            }
+        }
+        return null;
     }
 }

@@ -60,10 +60,15 @@ vec3 getGradient(in vec3 p) {
       }
     }
   }
+  // Make sure it's not equal to the zero vector.
+  grad.x += 0.001;
 
   return normalize(grad);
 }
 
+float rand(vec2 co){
+    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+}
 
 
 void main() {
@@ -83,11 +88,12 @@ void main() {
   vec3 orig = world;
   delta = normalize(world - eye) * distStep; // vec3.sub(delta, world, eye); vec3.normalize(delta, delta); vec3.scale(delta, delta, distStep);
   vec3 color = vec3( 255, 255, 255 );
-  // for (int s = 0; s < samples; s += 1) {
+  for (int s = 0; s < 1; s += 1) {
     world = vec3(eye); // vec3.copy(world, eye);
     vec3 c = vec3(255, 255, 255); // const start = Math.random();
-    // float start = 0.0;
-    // world += start * delta;
+    // float start = float(s)/4.0;
+    float start = rand(delta.xy * eye.xy * float(s + 1));
+    world += start * delta;
     for (float d = 0.0; d < maxDist.0; d += distStep) {
       world += delta;
       float material = getVoxel(world);
@@ -115,15 +121,17 @@ void main() {
         break;
       }
       // c = vec3(material * 2, material * 2, material * 2);
-    // }
-    
+    }
+
+    color = (color * float(s) + c) / (float(s) + 1.0);
+
     // color.r = (color.r * float(s) + c.r) / (float(s) + 1.0);
     // color.g = (color.g * float(s) + c.g) / (float(s) + 1.0);
     // color.b = (color.b * float(s) + c.b) / (float(s) + 1.0);
   }
   // c = Math.round(c / 20) * 20;
   // ctx.fillRect(minX + x * pixelSize, minY + y * pixelSize, pixelSize, pixelSize);
-  fragColor = vec4(c.r / 255.0, c.g / 255.0, c.b / 255.0, 1.0);
+  fragColor = vec4(color / 255.0, 1.0);
   // fragColor = vec4(texture(vox, vec3(p.xy, 3)).rgb / 255.0, 1.0);
   // fragColor = vec4(sx.0/20.0, sy.0/20.0, sz.0/20.0, 1.0);
   // fragColor = vec4(0.0, 0.0, 1.0, 1.0);
