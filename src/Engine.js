@@ -10,8 +10,12 @@ export default class Engine {
         this.canvas = document.getElementById('canvas');
         window.addEventListener('resize', resizeCanvas, false);
         function resizeCanvas() {
-            this.canvas.width = window.innerWidth;
-            this.canvas.height = window.innerHeight;
+            // this.canvas.width = window.innerWidth;
+            // this.canvas.height = window.innerHeight;
+            this.canvas.width = window.innerWidth / 2;
+            this.canvas.height = window.innerHeight / 2;
+            // this.canvas.width = window.innerWidth / 4;
+            // this.canvas.height = window.innerHeight / 4;
         }
         resizeCanvas.bind(this)();
         this.min = min;
@@ -61,7 +65,11 @@ export default class Engine {
                 zKernel: {
                     value: this.zKernel,
                     type: 'IntArray'
-                }
+                },
+                timestamp: {
+                    value: 0,
+                    type: 'Int',
+                },
             },
 
             vox,
@@ -71,7 +79,7 @@ export default class Engine {
         this.vox = vox;
         this.worldSize = worldSize;
         this.setUpMousetrap();
-        this.setUpMouseXY();
+        this.setUpMouseEvents();
     }
 
     setUpMousetrap() {
@@ -83,7 +91,7 @@ export default class Engine {
             Mousetrap.bind(`shift+${key}`, () => this.keys[ key ] = true, 'keydown');
             Mousetrap.bind(`shift+${key}`, () => this.keys[ key ] = false, 'keyup');
         }
-        ['left', 'right', 'up', 'down', 'space', 'shift', 'w', 'a', 's', 'd', 'b', 'v' ].forEach(listenForKey.bind(this));
+        ['space', 'shift', 'w', 'a', 's', 'd', 'b', 'v' ].forEach(listenForKey.bind(this));
     }
 
     setUpVariables() {
@@ -100,9 +108,10 @@ export default class Engine {
         this.look = [ 0, 0, 0 ];
         this.lookAt = [ 0, 0, 0 ];
         this.playerSpeed = 20;
-        this.turnSpeed = 2;
+        this.turnSpeed = 0.002;
         this.azimuth = 0;
         this.elevation = 0;
+        this.brushSize = 0;
 
         this.xKernel = new Int32Array([
             [ [ 1, 1, 1 ], [ 1, 1, 1 ], [ 1, 1, 1 ] ],
@@ -125,14 +134,66 @@ export default class Engine {
         this.boundRenderLoop = this.renderLoop.bind(this);
     }
 
-    setUpMouseXY() {
-        this.mouseX = null;
-        this.mouseY = null;
-        function handler(e) {
-            this.mouseX = e.pageX;
-            this.mouseY = e.pageY;
+    setUpMouseEvents() {
+        const handler = (e) => {
+            if (document.pointerLockElement === this.canvas) {
+                // Update elevation
+                this.elevation -= e.movementY * this.turnSpeed;
+                this.renderer.uniforms.viewMatrixInverse.changed = true;
+                this.elevation = Math.min(Math.PI / 2 - 0.01, Math.max(-Math.PI / 2 + 0.01, this.elevation));
+                vec3.rotateX(this.look, [0, 0, -1], [0, 0, 0], this.elevation);
+
+                // Update azimuth
+                this.azimuth -= e.movementX * this.turnSpeed;
+                this.renderer.uniforms.viewMatrixInverse.changed = true;
+                vec3.rotateY(this.forward, [0, 0, -1], [0, 0, 0], this.azimuth);
+                vec3.rotateY(this.look, this.look, [0, 0, 0], this.azimuth);
+                vec3.cross(this.right, this.forward, this.up);
+            }
         }
-        document.onmousemove = handler;
+        document.onmousemove = (e) => handler(e);
+        this.canvas.addEventListener('click', (e) => {
+            if (document.pointerLockElement === this.canvas) {
+                // Build
+                if (e.button === 2) {
+                    let world = this.getWorldHit({ before: true });
+                    if (world) {
+                        const s = this.brushSize * 2 + 1;
+                        world = world.map((c) => Math.floor(c / s) * s);
+                        for (let x = -this.brushSize; x <= this.brushSize; x += 1) {
+                            for (let y = -this.brushSize; y <= this.brushSize; y += 1) {
+                                for (let z = -this.brushSize; z <= this.brushSize; z += 1) {
+                                    // if (x * x + y * y + z * z < 3 * 3) {
+                                    this.setVoxel([world[0] + x, world[1] + y, world[2] + z], 1);
+                                    // }
+                                }
+                            }
+                        }
+                        this.renderer.updateVox();
+                    }
+                }
+                // Delete
+                if (e.button === 0) {
+                    let world = this.getWorldHit({ before: false });
+                    if (world) {
+                        const s = this.brushSize * 2 + 1;
+                        world = world.map((c) => Math.floor(c / s) * s);
+                        for (let x = -this.brushSize; x <= this.brushSize; x += 1) {
+                            for (let y = -this.brushSize; y <= this.brushSize; y += 1) {
+                                for (let z = -this.brushSize; z <= this.brushSize; z += 1) {
+                                    // if (x * x + y * y + z * z < 5 * 5) {
+                                    this.setVoxel([world[0] + x, world[1] + y, world[2] + z], 0);
+                                    // }
+                                }
+                            }
+                        }
+                        this.renderer.updateVox();
+                    }
+                }
+            } else {
+                this.canvas.requestPointerLock();
+            }
+        });
     }
 
     load() {
@@ -179,70 +240,12 @@ export default class Engine {
 
         vec3.add(this.eye, this.eye, this.movement);
 
-        // Update elevation
-        if (this.keys.up) {
-            this.elevation += dt * this.turnSpeed;
-            uniforms.viewMatrixInverse.changed = true;
-        } else if (this.keys.down) {
-            this.elevation -= dt * this.turnSpeed;
-            uniforms.viewMatrixInverse.changed = true;
-        }
-        this.elevation = Math.min(Math.PI / 2 - 0.01, Math.max(-Math.PI / 2 + 0.01, this.elevation));
-        vec3.rotateX(this.look, [0, 0, -1], [0, 0, 0], this.elevation);
-
-        // Update azimuth
-        if (this.keys.left) {
-            this.azimuth += dt * this.turnSpeed;
-            uniforms.viewMatrixInverse.changed = true;
-        } else if (this.keys.right) {
-            this.azimuth -= dt * this.turnSpeed;
-            uniforms.viewMatrixInverse.changed = true;
-        }
-        vec3.rotateY(this.forward, [0, 0, -1], [0, 0, 0], this.azimuth);
-        vec3.rotateY(this.look, this.look, [0, 0, 0], this.azimuth);
-        vec3.cross(this.right, this.forward, this.up);
-
         vec3.add(this.lookAt, this.eye, this.look);
         mat4.lookAt(this.viewMatrix, this.eye, this.lookAt, this.up);
         const aspect = this.canvas.height / this.canvas.width;
         mat4.frustum(this.frustum, -1, 1, -aspect, aspect, 2, 10);
         mat4.mul(this.viewMatrix, this.frustum, this.viewMatrix);
         mat4.invert(this.viewMatrixInverse, this.viewMatrix);
-
-        // Build
-        if (this.keys.b) {
-            const world = this.getWorldHit({ before: true });
-            if (world) {
-                for (let x = -5; x <= 5; x += 1) {
-                    for (let y = -5; y <= 5; y += 1) {
-                        for (let z = -5; z <= 5; z += 1) {
-                            if (x * x + y * y + z * z < 3 * 3) {
-                                this.setVoxel([world[0] + x, world[1] + y, world[2] + z], 2);
-                            }
-                        }
-                    }
-                }
-                this.renderer.updateVox();
-            }
-        }
-
-        // Delete
-        if (this.keys.v) {
-            const world = this.getWorldHit({ before: false });
-            if (world) {
-                for (let x = -5; x <= 5; x += 1) {
-                    for (let y = -5; y <= 5; y += 1) {
-                        for (let z = -5; z <= 5; z += 1) {
-                            if (x * x + y * y + z * z < 5 * 5) {
-                                this.setVoxel([world[0] + x, world[1] + y, world[2] + z], 0);
-                            }
-                        }
-                    }
-                }
-                this.renderer.updateVox();
-            }
-        }
-
 
         this.renderer.set({
             canvasWidth: this.canvas.width,
@@ -252,7 +255,8 @@ export default class Engine {
             xKernel: this.xKernel,
             yKernel: this.yKernel,
             zKernel: this.zKernel,
-        })
+            timestamp,
+        });
 
         this.renderer.render();
 
@@ -273,6 +277,9 @@ export default class Engine {
         const xi = Math.floor(p[ 0 ] - this.min[ 0 ]);
         const yi = Math.floor(p[ 1 ] - this.min[ 1 ]);
         const zi = Math.floor(p[ 2 ] - this.min[ 2 ]);
+        if (xi < 0 || xi >= this.worldSize[0] || yi < 0 || yi >= this.worldSize[1] || zi < 0 || zi >= this.worldSize[2]) {
+            return 0;
+        }
         this.vox[(zi * this.worldSize[0] * this.worldSize[1] + yi * this.worldSize[0] + xi) * 3] = val;
     }
 
