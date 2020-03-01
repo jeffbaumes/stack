@@ -1,4 +1,5 @@
-import frag from './shade.frag';
+import frag from './walk.frag';
+// import frag from './shade.frag';
 
 const VERTEX_COUNT = 6;
 const VERTEX_POSITIONS = [

@@ -14,6 +14,7 @@ export default class Engine {
             // this.canvas.height = window.innerHeight;
             this.canvas.width = window.innerWidth / 2;
             this.canvas.height = window.innerHeight / 2;
+            this.canvas.style.imageRendering = 'pixelated';
             // this.canvas.width = window.innerWidth / 4;
             // this.canvas.height = window.innerHeight / 4;
         }
@@ -92,6 +93,10 @@ export default class Engine {
             Mousetrap.bind(`shift+${key}`, () => this.keys[ key ] = false, 'keyup');
         }
         ['space', 'shift', 'w', 'a', 's', 'd', 'b', 'v' ].forEach(listenForKey.bind(this));
+        Mousetrap.bind('1', () => this.buildBlock = 1);
+        Mousetrap.bind('shift+1', () => this.buildBlock = 1);
+        Mousetrap.bind('2', () => this.buildBlock = 2);
+        Mousetrap.bind('shift+2', () => this.buildBlock = 2);
     }
 
     setUpVariables() {
@@ -111,7 +116,8 @@ export default class Engine {
         this.turnSpeed = 0.002;
         this.azimuth = 0;
         this.elevation = 0;
-        this.brushSize = 0;
+        this.brushSize = 5;
+        this.buildBlock = 1;
 
         this.xKernel = new Int32Array([
             [ [ 1, 1, 1 ], [ 1, 1, 1 ], [ 1, 1, 1 ] ],
@@ -159,13 +165,13 @@ export default class Engine {
                     let world = this.getWorldHit({ before: true });
                     if (world) {
                         const s = this.brushSize * 2 + 1;
-                        world = world.map((c) => Math.floor(c / s) * s);
+                        // world = world.map((c) => Math.floor(c / s) * s);
                         for (let x = -this.brushSize; x <= this.brushSize; x += 1) {
                             for (let y = -this.brushSize; y <= this.brushSize; y += 1) {
                                 for (let z = -this.brushSize; z <= this.brushSize; z += 1) {
-                                    // if (x * x + y * y + z * z < 3 * 3) {
-                                    this.setVoxel([world[0] + x, world[1] + y, world[2] + z], 1);
-                                    // }
+                                    if (x * x + y * y + z * z < 3 * 3) {
+                                        this.setVoxel([world[0] + x, world[1] + y, world[2] + z], this.buildBlock);
+                                    }
                                 }
                             }
                         }
@@ -177,13 +183,13 @@ export default class Engine {
                     let world = this.getWorldHit({ before: false });
                     if (world) {
                         const s = this.brushSize * 2 + 1;
-                        world = world.map((c) => Math.floor(c / s) * s);
+                        // world = world.map((c) => Math.floor(c / s) * s);
                         for (let x = -this.brushSize; x <= this.brushSize; x += 1) {
                             for (let y = -this.brushSize; y <= this.brushSize; y += 1) {
                                 for (let z = -this.brushSize; z <= this.brushSize; z += 1) {
-                                    // if (x * x + y * y + z * z < 5 * 5) {
-                                    this.setVoxel([world[0] + x, world[1] + y, world[2] + z], 0);
-                                    // }
+                                    if (x * x + y * y + z * z < 5 * 5) {
+                                        this.setVoxel([world[0] + x, world[1] + y, world[2] + z], 0);
+                                    }
                                 }
                             }
                         }
@@ -208,6 +214,8 @@ export default class Engine {
         let dt = (timestamp - this.lastTime) / 1000;
         this.lastTime = timestamp;
 
+        this.step(timestamp);
+
         const uniforms = this.renderer.uniforms;
 
         // Update position
@@ -216,23 +224,23 @@ export default class Engine {
             vec3.scale(this.movement, this.forward, dt * this.playerSpeed);
             uniforms.eye.changed = true;
             uniforms.viewMatrixInverse.changed = true;
-        } else if (this.keys.s) {
+        } if (this.keys.s) {
             vec3.scale(this.movement, this.forward, -dt * this.playerSpeed);
             uniforms.eye.changed = true;
             uniforms.viewMatrixInverse.changed = true;
-        } else if (this.keys.d) {
+        } if (this.keys.d) {
             vec3.scale(this.movement, this.right, dt * this.playerSpeed);
             uniforms.eye.changed = true;
             uniforms.viewMatrixInverse.changed = true;
-        } else if (this.keys.a) {
+        } if (this.keys.a) {
             vec3.scale(this.movement, this.right, -dt * this.playerSpeed);
             uniforms.eye.changed = true;
             uniforms.viewMatrixInverse.changed = true;
-        } else if (this.keys.space) {
+        } if (this.keys.space) {
             vec3.scale(this.movement, this.up, dt * this.playerSpeed);
             uniforms.eye.changed = true;
             uniforms.viewMatrixInverse.changed = true;
-        } else if (this.keys.shift) {
+        } if (this.keys.shift) {
             vec3.scale(this.movement, this.up, -dt * this.playerSpeed);
             uniforms.eye.changed = true;
             uniforms.viewMatrixInverse.changed = true;
@@ -307,5 +315,92 @@ export default class Engine {
             }
         }
         return null;
+    }
+
+    step(timestamp) {
+        if (!this.lastStepTime) {
+            this.lastStepTime = timestamp;
+        }
+        if (timestamp - this.lastStepTime < 250) {
+            return;
+        }
+        this.lastStepTime = timestamp;
+        for (let x = this.min[0]; x < this.min[0] + this.worldSize[0]; x += 1) {
+            for (let y = this.min[1] + 1; y < this.min[1] + this.worldSize[1]; y += 1) {
+                for (let z = this.min[2]; z < this.min[2] + this.worldSize[2]; z += 1) {
+                    let material = this.getVoxel([x, y, z]);
+                    if (material !== 0) {
+                        let materialUnder = this.getVoxel([x, y - 1, z]);
+                        if (materialUnder === 0) {
+                            this.setVoxel([x, y - 1, z], material);
+                            this.setVoxel([x, y, z], 0);
+                            continue;
+                        }
+                        if (material === 2) {
+                            if (this.getVoxel([x - 1, y - 1, z]) === 0) {
+                                this.setVoxel([x - 1, y - 1, z], material);
+                                this.setVoxel([x, y, z], 0);
+                                continue;
+                            }
+                            if (this.getVoxel([x + 1, y - 1, z]) === 0) {
+                                this.setVoxel([x + 1, y - 1, z], material);
+                                this.setVoxel([x, y, z], 0);
+                                continue;
+                            }
+                            if (this.getVoxel([x, y - 1, z - 1]) === 0) {
+                                this.setVoxel([x, y - 1, z - 1], material);
+                                this.setVoxel([x, y, z], 0);
+                                continue;
+                            }
+                            if (this.getVoxel([x, y - 1, z + 1]) === 0) {
+                                this.setVoxel([x, y - 1, z + 1], material);
+                                this.setVoxel([x, y, z], 0);
+                                continue;
+                            }
+                            if (this.getVoxel([x - 1, y - 1, z - 1]) === 0) {
+                                this.setVoxel([x - 1, y - 1, z - 1], material);
+                                this.setVoxel([x, y, z], 0);
+                                continue;
+                            }
+                            if (this.getVoxel([x - 1, y - 1, z + 1]) === 0) {
+                                this.setVoxel([x - 1, y - 1, z + 1], material);
+                                this.setVoxel([x, y, z], 0);
+                                continue;
+                            }
+                            if (this.getVoxel([x + 1, y - 1, z - 1]) === 0) {
+                                this.setVoxel([x + 1, y - 1, z - 1], material);
+                                this.setVoxel([x, y, z], 0);
+                                continue;
+                            }
+                            if (this.getVoxel([x + 1, y - 1, z + 1]) === 0) {
+                                this.setVoxel([x + 1, y - 1, z + 1], material);
+                                this.setVoxel([x, y, z], 0);
+                                continue;
+                            }
+                            if (this.getVoxel([x - 2, y - 1, z]) === 0) {
+                                this.setVoxel([x - 2, y - 1, z], material);
+                                this.setVoxel([x, y, z], 0);
+                                continue;
+                            }
+                            if (this.getVoxel([x + 2, y - 1, z]) === 0) {
+                                this.setVoxel([x + 2, y - 1, z], material);
+                                this.setVoxel([x, y, z], 0);
+                                continue;
+                            }
+                            if (this.getVoxel([x, y - 1, z - 2]) === 0) {
+                                this.setVoxel([x, y - 1, z - 2], material);
+                                this.setVoxel([x, y, z], 0);
+                                continue;
+                            }
+                            if (this.getVoxel([x, y - 1, z + 2]) === 0) {
+                                this.setVoxel([x, y - 1, z + 2], material);
+                                this.setVoxel([x, y, z], 0);
+                                continue;
+                            }                        }
+                    }
+                }
+            }
+        }
+        this.renderer.updateVox();
     }
 }
