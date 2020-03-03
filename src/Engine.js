@@ -177,7 +177,7 @@ export default class Engine {
                         for (let x = -this.brushSize; x <= this.brushSize; x += 1) {
                             for (let y = -this.brushSize; y <= this.brushSize; y += 1) {
                                 for (let z = -this.brushSize; z <= this.brushSize; z += 1) {
-                                    if (x * x + y * y + z * z < 3 * 3) {
+                                    if (x * x + y * y + z * z < 3 * 3 && (this.buildBlock === 1 || this.getVoxel([ world[ 0 ] + x, world[ 1 ] + y, world[ 2 ] + z ]) === 0)) {
                                         this.setVoxel([ world[ 0 ] + x, world[ 1 ] + y, world[ 2 ] + z ], this.buildBlock);
                                     }
                                 }
