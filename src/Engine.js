@@ -165,50 +165,61 @@ export default class Engine {
             }
         }
         document.onmousemove = (e) => handler(e);
-        this.canvas.addEventListener('click', (e) => {
-            if (document.pointerLockElement === this.canvas) {
-                // Build
-                if (e.button === 2) {
-                    this.vox = this.renderer.simulatingShader.retrieveFramebuffer();
-                    let world = this.getWorldHit({ before: true });
-                    if (world) {
-                        const s = this.brushSize * 2 + 1;
-                        // world = world.map((c) => Math.floor(c / s) * s);
-                        for (let x = -this.brushSize; x <= this.brushSize; x += 1) {
-                            for (let y = -this.brushSize; y <= this.brushSize; y += 1) {
-                                for (let z = -this.brushSize; z <= this.brushSize; z += 1) {
-                                    if (x * x + y * y + z * z < 3 * 3 && (this.buildBlock === 1 || this.getVoxel([ world[ 0 ] + x, world[ 1 ] + y, world[ 2 ] + z ]) === 0)) {
-                                        this.setVoxel([ world[ 0 ] + x, world[ 1 ] + y, world[ 2 ] + z ], this.buildBlock);
-                                    }
-                                }
-                            }
-                        }
-                        this.renderer.simulatingShader.updateSampler2d();
-                    }
-                }
-                // Delete
-                if (e.button === 0) {
-                    this.vox = this.renderer.simulatingShader.retrieveFramebuffer();
-                    let world = this.getWorldHit({ before: false });
-                    if (world) {
-                        const s = this.brushSize * 2 + 1;
-                        // world = world.map((c) => Math.floor(c / s) * s);
-                        for (let x = -this.brushSize; x <= this.brushSize; x += 1) {
-                            for (let y = -this.brushSize; y <= this.brushSize; y += 1) {
-                                for (let z = -this.brushSize; z <= this.brushSize; z += 1) {
-                                    if (x * x + y * y + z * z < 5 * 5) {
-                                        this.setVoxel([ world[ 0 ] + x, world[ 1 ] + y, world[ 2 ] + z ], 0);
-                                    }
-                                }
-                            }
-                        }
-                        this.renderer.simulatingShader.updateSampler2d();
-                    }
-                }
-            } else {
-                this.canvas.requestPointerLock();
-            }
+        this.canvas.addEventListener('mouseup', (e) => {
+            this.mousedown = false;
+            this.mouseButton = e.button;
+        })
+        this.canvas.addEventListener('mousedown', (e) => {
+            this.mousedown = true;
+            this.mouseButton = e.button
         });
+
+        setInterval(this.placeBlocks.bind(this), 100);
+    }
+
+    placeBlocks() {
+        if (this.mousedown && document.pointerLockElement === this.canvas) {
+            // Build
+            if (this.mouseButton === 2) {
+                this.vox = this.renderer.simulatingShader.retrieveFramebuffer();
+                let world = this.getWorldHit({ before: true });
+                if (world) {
+                    const s = this.brushSize * 2 + 1;
+                    // world = world.map((c) => Math.floor(c / s) * s);
+                    for (let x = -this.brushSize; x <= this.brushSize; x += 1) {
+                        for (let y = -this.brushSize; y <= this.brushSize; y += 1) {
+                            for (let z = -this.brushSize; z <= this.brushSize; z += 1) {
+                                if (x * x + y * y + z * z < 3 * 3 && (this.buildBlock === 1 || this.getVoxel([ world[ 0 ] + x, world[ 1 ] + y, world[ 2 ] + z ]) === 0)) {
+                                    this.setVoxel([ world[ 0 ] + x, world[ 1 ] + y, world[ 2 ] + z ], this.buildBlock);
+                                }
+                            }
+                        }
+                    }
+                    this.renderer.simulatingShader.updateSampler2d();
+                }
+            }
+            // Delete
+            if (this.mouseButton === 0) {
+                this.vox = this.renderer.simulatingShader.retrieveFramebuffer();
+                let world = this.getWorldHit({ before: false });
+                if (world) {
+                    const s = this.brushSize * 2 + 1;
+                    // world = world.map((c) => Math.floor(c / s) * s);
+                    for (let x = -this.brushSize; x <= this.brushSize; x += 1) {
+                        for (let y = -this.brushSize; y <= this.brushSize; y += 1) {
+                            for (let z = -this.brushSize; z <= this.brushSize; z += 1) {
+                                if (x * x + y * y + z * z < 5 * 5) {
+                                    this.setVoxel([ world[ 0 ] + x, world[ 1 ] + y, world[ 2 ] + z ], 0);
+                                }
+                            }
+                        }
+                    }
+                    this.renderer.simulatingShader.updateSampler2d();
+                }
+            }
+        } else {
+            this.canvas.requestPointerLock();
+        }
     }
 
     load() {
