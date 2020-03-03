@@ -1,5 +1,5 @@
 import frag from './walk.frag';
-// import frag from './shade.frag';
+import simFrag from './sim.frag';
 
 const VERTEX_COUNT = 6;
 const VERTEX_POSITIONS = [
@@ -25,7 +25,7 @@ export default class Renderer {
 
     load() {
         this.gl.viewport(0, 0, this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
-        const buffer = this.gl.createBuffer();
+        let buffer = this.gl.createBuffer();
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
         this.gl.bufferData(
             this.gl.ARRAY_BUFFER,
@@ -33,8 +33,7 @@ export default class Renderer {
             this.gl.STATIC_DRAW
         );
 
-        this.program = this.gl.createProgram();
-        const buildShader = (type, source) => {
+        const buildShader = (type, source, program) => {
             const shader = this.gl.createShader(type);
             this.gl.shaderSource(shader, source);
             this.gl.compileShader(shader);
@@ -42,26 +41,30 @@ export default class Renderer {
             console.log('Shader compiled successfully: ' + compiled);
             let compilationLog = this.gl.getShaderInfoLog(shader);
             console.log('Shader compiler log: ' + compilationLog);
-            this.gl.attachShader(this.program, shader);
+            this.gl.attachShader(program, shader);
         };
-        buildShader(
-            this.gl.VERTEX_SHADER,
+        const vertShader =
             `#version 300 es
             in vec2 a_position;
             void main() {
                 gl_Position = vec4(a_position, 0.0, 1.0);
-            }`,
+            }`;
+        this.program = this.gl.createProgram();
+        buildShader(
+            this.gl.VERTEX_SHADER,
+            vertShader,
+            this.program,
         );
-
         buildShader(
             this.gl.FRAGMENT_SHADER,
             this.createFragShader(),
+            this.program,
         );
         this.gl.linkProgram(this.program);
         this.gl.useProgram(this.program);
-        const positionLocation = this.gl.getAttribLocation(this.program, 'a_position');
+        let positionLocation = this.gl.getAttribLocation(this.program, 'a_position');
         this.gl.enableVertexAttribArray(positionLocation);
-        const fieldCount = VERTEX_POSITIONS.length / VERTEX_COUNT;
+        let fieldCount = VERTEX_POSITIONS.length / VERTEX_COUNT;
         this.gl.vertexAttribPointer(
             positionLocation,
             fieldCount,
@@ -71,15 +74,57 @@ export default class Renderer {
             0
         );
 
+
+        this.simProgram = this.gl.createProgram();
+        buildShader(
+            this.gl.VERTEX_SHADER,
+            vertShader,
+            this.simProgram,
+        );
+        buildShader(
+            this.gl.FRAGMENT_SHADER,
+            simFrag,
+            this.simProgram,
+        );
+        this.gl.linkProgram(this.simProgram);
+        this.gl.useProgram(this.simProgram);
+
+        buffer = this.gl.createBuffer();
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
+        this.gl.bufferData(
+            this.gl.ARRAY_BUFFER,
+            new Float32Array(VERTEX_POSITIONS),
+            this.gl.STATIC_DRAW
+        );
+
+        positionLocation = this.gl.getAttribLocation(this.simProgram, 'a_position');
+        this.gl.enableVertexAttribArray(positionLocation);
+        fieldCount = VERTEX_POSITIONS.length / VERTEX_COUNT;
+        this.gl.vertexAttribPointer(
+            positionLocation,
+            fieldCount,
+            this.gl.FLOAT,
+            this.gl.FALSE,
+            fieldCount * Float32Array.BYTES_PER_ELEMENT,
+            0
+        );
+
+        this.gl.useProgram(this.program);
+
+
         this.voxTexture = this.gl.createTexture();
-        this.gl.bindTexture(this.gl.TEXTURE_3D, this.voxTexture);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.voxTexture);
         this.getPositions();
-        this.updateVox();
+        this.updateVox(this.voxTexture);
         this.set(Object.keys(this.uniforms).reduce((obj, v) => {
             obj[ v ] = this.uniforms[ v ].value;
             return obj;
         }, {}), true);
+        this.framebuffer = this.createFramebuffer(this.voxTexture);
 
+        this.voxTexture2 = this.gl.createTexture();
+        this.updateVox(this.voxTexture2, null);
+        this.framebuffer2 = this.createFramebuffer(this.voxTexture2);
     }
 
     createFragShader() {
@@ -89,6 +134,13 @@ export default class Renderer {
         });
         console.log(newFrag);
         return newFrag;
+    }
+
+    createFramebuffer(texture) {
+        const framebuffer = this.gl.createFramebuffer();
+        this.gl.bindFramebuffer(this.gl.DRAW_FRAMEBUFFER, framebuffer);
+        this.gl.framebufferTexture2D(this.gl.DRAW_FRAMEBUFFER, this.gl.COLOR_ATTACHMENT0, this.gl.TEXTURE_2D, texture, 0);
+        return framebuffer;
     }
 
     getPositions() {
@@ -140,26 +192,63 @@ export default class Renderer {
         }
     }
 
-    updateVox() {
-        this.gl.bindTexture(this.gl.TEXTURE_3D, this.voxTexture);
-        this.gl.texParameteri(this.gl.TEXTURE_3D, this.gl.TEXTURE_MAG_FILTER, this.gl.NEAREST);
-        this.gl.texParameteri(this.gl.TEXTURE_3D, this.gl.TEXTURE_MIN_FILTER, this.gl.NEAREST);
-        this.gl.texImage3D(
-            this.gl.TEXTURE_3D,
+    updateVox(texture, data) {
+        if (texture === undefined) {
+            texture = this.voxTexture;
+        }
+        if (data === undefined) {
+            data = this.vox;
+        }
+        this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.NEAREST);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.NEAREST);
+        this.gl.texImage2D(
+            this.gl.TEXTURE_2D,
             0,
             this.gl.RGB,
             this.consts.sx,
-            this.consts.sy,
-            this.consts.sz,
+            this.consts.sy * this.consts.sz,
             0,
             this.gl.RGB,
             this.gl.UNSIGNED_BYTE,
-            this.vox,
-            this.uniformLocations.vox
+            data,
         );
     }
 
     render() {
+        this.gl.useProgram(this.simProgram);
+        this.gl.viewport(0, 0, this.consts.sx, this.consts.sy * this.consts.sz);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.voxTexture);
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.framebuffer2);
         this.gl.drawArrays(this.gl.TRIANGLES, 0, VERTEX_COUNT);
+
+        this.gl.useProgram(this.program);
+        this.gl.viewport(0, 0, this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.voxTexture2);
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+        this.gl.drawArrays(this.gl.TRIANGLES, 0, VERTEX_COUNT);
+
+        [this.voxTexture, this.voxTexture2, this.framebuffer, this.framebuffer2] =
+            [this.voxTexture2, this.voxTexture, this.framebuffer2, this.framebuffer];
+    }
+
+    retrieveVoxels() {
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.framebuffer);
+        const voxels = new Uint8Array(this.consts.sx * this.consts.sy * this.consts.sz * 4);
+        this.gl.readPixels(0, 0, this.consts.sx, this.consts.sy * this.consts.sz, this.gl.RGB, this.gl.UNSIGNED_BYTE, voxels);
+        this.vox = voxels;
+        return voxels;
+    }
+
+    renderStep() {
+        // console.log('renderStep');
+        // this.gl.useProgram(this.simProgram);
+        // this.gl.viewport(0, 0, this.sx, this.sy*this.sz);
+        // this.gl.bindTexture(this.gl.TEXTURE_2D, this.voxTexture);
+        // this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.framebuffer2);
+        // this.gl.drawArrays(this.gl.TRIANGLES, 0, VERTEX_COUNT);
+        // // [this.voxTexture, this.voxTexture2, this.framebuffer, this.framebuffer2] =
+        // //     [this.voxTexture2, this.voxTexture, this.framebuffer2, this.framebuffer];
+        // this.gl.useProgram(this.program);
     }
 }

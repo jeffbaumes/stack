@@ -162,6 +162,7 @@ export default class Engine {
             if (document.pointerLockElement === this.canvas) {
                 // Build
                 if (e.button === 2) {
+                    this.vox = this.renderer.retrieveVoxels();
                     let world = this.getWorldHit({ before: true });
                     if (world) {
                         const s = this.brushSize * 2 + 1;
@@ -180,6 +181,7 @@ export default class Engine {
                 }
                 // Delete
                 if (e.button === 0) {
+                    this.vox = this.renderer.retrieveVoxels();
                     let world = this.getWorldHit({ before: false });
                     if (world) {
                         const s = this.brushSize * 2 + 1;
@@ -325,6 +327,8 @@ export default class Engine {
             return;
         }
         this.lastStepTime = timestamp;
+        this.renderer.renderStep();
+        /*
         for (let x = this.min[0]; x < this.min[0] + this.worldSize[0]; x += 1) {
             for (let y = this.min[1] + 1; y < this.min[1] + this.worldSize[1]; y += 1) {
                 for (let z = this.min[2]; z < this.min[2] + this.worldSize[2]; z += 1) {
@@ -402,5 +406,6 @@ export default class Engine {
             }
         }
         this.renderer.updateVox();
+        */
     }
 }

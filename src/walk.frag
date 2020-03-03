@@ -10,7 +10,7 @@ uniform vec3 eye;
 uniform vec3 minSize;
 uniform int canvasWidth;
 uniform int canvasHeight;
-uniform sampler3D vox;
+uniform sampler2D vox;
 out vec4 fragColor;
 
 const float PI = 3.1415926535897932384626433832795;
@@ -29,7 +29,7 @@ int getVoxel(in vec3 p) {
   if (i.x < 0 || i.x >= sx || i.y < 0 || i.y >= sy || i.z < 0 || i.z >= sz) {
     return 0;
   }
-  return int(texelFetch(vox, i, 0).x * 255.);
+  return int(texelFetch(vox, ivec2(i.x, i.z * sy + i.y), 0).x * 255.);
 }
 
 float pointOcclusion(int side1, int side2, int corner) {
@@ -125,7 +125,7 @@ void main() {
   vec3 p = vec3(0, 0, 0);
   vec3 delta = vec3(0, 0, 0);
   vec3 sand = vec3( 76, 70, 50 );
-  vec3 green = vec3( 30, 69, 41 );
+  vec3 green = vec3( 76, 175, 80 );
   vec3 blue = vec3( 33, 150, 243 );
   vec3 white = vec3( 255, 255, 255 );
   vec3 lightDir = normalize(vec3( 0.5, 1, 0 ));
