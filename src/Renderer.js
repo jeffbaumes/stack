@@ -4,12 +4,14 @@ import Shader from './Shader';
 
 
 export default class GPUProcessing {
-    constructor({ canvas, consts, uniforms, vox }) {
+    constructor({ canvas, consts, uniforms, simulationUniforms, vox }) {
         this.consts = consts;
         this.uniforms = uniforms;
+        this.simulationUniforms = simulationUniforms;
         this.vox = vox;
         this.canvas = canvas;
         this.gl = canvas.getContext('webgl2');
+        this.timestep = 0;
     }
 
     load() {
@@ -31,7 +33,7 @@ export default class GPUProcessing {
             glContext: this.gl,
             frag: simFrag,
             consts: this.consts,
-            uniforms: {},
+            uniforms: this.simulationUniforms,
             sampler2d: {
                 name: 'vox',
                 data: this.vox,
@@ -47,7 +49,16 @@ export default class GPUProcessing {
     }
 
     render() {
-        this.simulatingShader.render();
+        for (let i = 0; i < 5; i += 1) {
+            this.simulatingShader.set({ timestep: this.timestep });
+            this.simulatingShader.render();
+            this.timestep += 1;
+            [this.simulatingShader.sampler2dTexture, this.renderingShader.sampler2dTexture, this.simulatingShader.framebuffer, this.renderingShader.framebuffer] =
+                [this.renderingShader.sampler2dTexture, this.simulatingShader.sampler2dTexture, this.renderingShader.framebuffer, this.simulatingShader.framebuffer];
+        }
+        [this.simulatingShader.sampler2dTexture, this.renderingShader.sampler2dTexture, this.simulatingShader.framebuffer, this.renderingShader.framebuffer] =
+            [this.renderingShader.sampler2dTexture, this.simulatingShader.sampler2dTexture, this.renderingShader.framebuffer, this.simulatingShader.framebuffer];
+
         this.renderingShader.render();
 
         // [ this.texture1, this.texture2, this.framebuffer1, this.framebuffer2 ] =

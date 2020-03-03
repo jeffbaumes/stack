@@ -73,6 +73,13 @@ export default class Engine {
                 },
             },
 
+            simulationUniforms: {
+                timestep: {
+                    value: 0,
+                    type: 'Int',
+                },
+            },
+
             vox,
 
         });
