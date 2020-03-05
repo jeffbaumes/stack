@@ -32,9 +32,12 @@ int hash2(vec3 p) {
 
 int material(vec3 p) {
   int here = getVoxel(p);
+
+  // Rain
   // if (p.y == 31. && rand(p.xz / float(timestep % 1000)) > 0.9995 && here == 0) {
   //   return 2;
   // }
+
   int mode = timestep % 2;
   if (mode == 0) {
     int above = getVoxel(p + vec3(0., 1., 0.));
@@ -52,23 +55,6 @@ int material(vec3 p) {
     vec3 pd1 = p - vec3(1., 0., 0.);
     vec3 pd2 = p + vec3(0., 0., 1.);
     vec3 pd3 = p - vec3(0., 0., 1.);
-    // int s = hash(vec3(timestep)) % 4;
-    // int wd = s;
-    // if (s == 1) {
-    //   wd = 3;
-    // } else if (s == 3) {
-    //   wd = 1;
-    // }
-    // int wd0 = wd;
-    // int wd1 = wd;
-    // int wd2 = wd;
-    // int wd3 = wd;
-
-    // int wd = hash(p) % 4;
-    // int wd0 = hash(pd0) % 4;
-    // int wd1 = hash(pd1) % 4;
-    // int wd2 = hash(pd2) % 4;
-    // int wd3 = hash(pd3) % 4;
 
     int wd = hash2(p) % 4;
     int wd0 = hash2(pd0) % 4;
@@ -80,38 +66,30 @@ int material(vec3 p) {
     int md1 = getVoxel(pd1);
     int md2 = getVoxel(pd2);
     int md3 = getVoxel(pd3);
-    // if (mode == 1) {
-      if (wd == 0 && here == 2 && md0 == 0) {
-        return 0;
-      }
-      if (wd1 == 0 && here == 0 && md1 == 2) {
-        return 2;
-      }
-    // }
-    // if (mode == 2) {
-      if (wd == 1 && here == 2 && md1 == 0) {
-        return 0;
-      }
-      if (wd0 == 1 && here == 0 && md0 == 2) {
-        return 2;
-      }
-    // }
-    // if (mode == 3) {
-      if (wd == 2 && here == 2 && md2 == 0) {
-        return 0;
-      }
-      if (wd3 == 2 && here == 0 && md3 == 2) {
-        return 2;
-      }
-    // }
-    // if (mode == 4) {
-      if (wd == 3 && here == 2 && md3 == 0) {
-        return 0;
-      }
-      if (wd2 == 3 && here == 0 && md2 == 2) {
-        return 2;
-      }
-    // }
+    if (wd == 0 && here == 2 && md0 == 0) {
+      return 0;
+    }
+    if (wd1 == 0 && here == 0 && md1 == 2) {
+      return 2;
+    }
+    if (wd == 1 && here == 2 && md1 == 0) {
+      return 0;
+    }
+    if (wd0 == 1 && here == 0 && md0 == 2) {
+      return 2;
+    }
+    if (wd == 2 && here == 2 && md2 == 0) {
+      return 0;
+    }
+    if (wd3 == 2 && here == 0 && md3 == 2) {
+      return 2;
+    }
+    if (wd == 3 && here == 2 && md3 == 0) {
+      return 0;
+    }
+    if (wd2 == 3 && here == 0 && md2 == 2) {
+      return 2;
+    }
   }
   return here;
 }
