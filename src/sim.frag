@@ -24,32 +24,27 @@ int hash(vec3 p) {
 
 int hash2(vec3 p) {
   ivec3 i = ivec3(p);
-  bool x = (i.x + i.y) % 2 == 1;
-  bool z = (i.z + i.y) % 2 == 1;
-  // int phase = int(timestep % 1000 < 500);
-  int phase = 0;
-  if (!x && !z) {
-    return 0 + timestep + phase + i.y;
+  if ((i.x + i.z) % 2 == 0) {
+    return 0 + timestep + i.y;
   }
-  if (x && !z) {
-    return 2 + timestep + phase + i.y;
-  }
-  if (x && z) {
-    return 0 + timestep + phase + i.y;
-  }
-  return 2 + timestep + phase + i.y;
+  return 2 + timestep + i.y;
 }
 
 int material(vec3 p) {
-  int mode = timestep % 2;
   int here = getVoxel(p);
+  // if (p.y == 31. && rand(p.xz / float(timestep % 1000)) > 0.9995 && here == 0) {
+  //   return 2;
+  // }
+  int mode = timestep % 2;
   if (mode == 0) {
     int above = getVoxel(p + vec3(0., 1., 0.));
     int below = getVoxel(p - vec3(0., 1., 0.));
-    if ((above != 0 && here == 0) || (above == 1 && here == 2)) {
+    // if ((above != 0 && here == 0) || (above == 1 && here == 2)) {
+    if (above == 2 && here == 0) {
       return above;
     }
-    if ((here != 0 && below == 0) || (here == 1 && below == 2)) {
+    // if ((here != 0 && below == 0) || (here == 1 && below == 2)) {
+    if (here == 2 && below == 0) {
       return below;
     }
   } else {

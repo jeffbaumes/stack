@@ -30,7 +30,12 @@ init().then(() => {
                 const val = turbulence2D(x / 100, z / 100);
                 // console.log(val);
                 // vox[(z * worldSize[0] * worldSize[1] + y * worldSize[0] + x) * 3] = y / worldSize[1] > val ? (y > worldSize[1] / 2 ? 0 : 2) : 1;
-                vox[(z * worldSize[0] * worldSize[1] + y * worldSize[0] + x) * 3] = y / worldSize[1] > val ? (y > worldSize[1] / 2 && x < worldSize[0] / 2 ? 0 : 2) : 1;
+                const index = (z * worldSize[0] * worldSize[1] + y * worldSize[0] + x) * 3;
+                vox[index] = y / worldSize[1] > val ? (y > worldSize[1] / 2 && x < worldSize[0] / 2 ? 0 : 2) : 1;
+                if (vox[index] === 2) {
+                    vox[index + 1] = 1;
+                }
+                // vox[(z * worldSize[0] * worldSize[1] + y * worldSize[0] + x) * 3] = y / worldSize[1] > val ? (y > worldSize[1] / 2 && x < worldSize[0] / 2 ? 0 : 0) : 1;
             }
         }
     }
