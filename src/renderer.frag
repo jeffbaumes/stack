@@ -3,7 +3,9 @@
 precision highp float;
 precision highp sampler3D;
 
-
+uniform int sx;
+uniform int sy;
+uniform int sz;
 uniform int timestamp;
 uniform mat4 viewMatrixInverse;
 uniform vec3 eye;
@@ -17,6 +19,7 @@ const float PI = 3.1415926535897932384626433832795;
 const float N_AIR = 1.;
 const float N_WATER = 1.333;
 const float CRITICAL_ANGLE = 0.848345669;
+const float DIST_STEP = 0.25;
 
 const float WAVE_AMPLITUDE = 0.01;
 const float WAVE_FREQUENCY = 1.;
@@ -29,7 +32,16 @@ int getVoxel(in vec3 p) {
   if (i.x < 0 || i.x >= sx || i.y < 0 || i.y >= sy || i.z < 0 || i.z >= sz) {
     return 0;
   }
-  return int(texelFetch(vox, ivec2(i.x, i.z * sy + i.y), 0).x * 255.);
+  // return int(texelFetch(vox, ivec2(i.x, i.z * sy + i.y), 0).x * 255.);
+  return int(texelFetch(vox, ivec2(i.x, i.z * sy + i.y), 0).x);
+}
+
+float getVoxelLevel(in vec3 p) {
+  ivec3 i = ivec3(p - minSize);
+  if (i.x < 0 || i.x >= sx || i.y < 0 || i.y >= sy || i.z < 0 || i.z >= sz) {
+    return 0.;
+  }
+  return texelFetch(vox, ivec2(i.x, i.z * sy + i.y), 0).y;
 }
 
 float pointOcclusion(int side1, int side2, int corner) {
@@ -149,7 +161,6 @@ void main() {
     float d = 0.;
     int iter = 0;
     int maxIter = 400;
-    // for (d = 0.; d < float(maxDist); d += distStep) {
     while (iter < maxIter) {
       iter += 1;
 
@@ -187,6 +198,7 @@ void main() {
 
       lastMaterial = material;
       material = getVoxel(world);
+      float level = getVoxelLevel(world);
 
       if (material == 0) {
         if (bounces < MAX_BOUNCES && lastMaterial == 2) {
@@ -196,9 +208,9 @@ void main() {
             waterNormal = normalize(vec3(WAVE_AMPLITUDE*sin(world.x*WAVE_FREQUENCY + float(timestamp)*WAVE_VELOCITY), -1., WAVE_AMPLITUDE*cos(world.z*WAVE_FREQUENCY + float(timestamp)*WAVE_VELOCITY)));
           }
           float incidenceAngle = PI - acos(dot(waterNormal, normalize(delta)));
-          vec3 deltaRefract = refract(normalize(delta), waterNormal, N_WATER/N_AIR) * distStep;
+          vec3 deltaRefract = refract(normalize(delta), waterNormal, N_WATER/N_AIR) * DIST_STEP;
           float refractionAngle = PI - acos(dot(waterNormal, normalize(deltaRefract)));
-          vec3 deltaReflect = reflect(normalize(delta), waterNormal) * distStep;
+          vec3 deltaReflect = reflect(normalize(delta), waterNormal) * DIST_STEP;
           float reflectionPercentage = 1.;
           if (incidenceAngle < CRITICAL_ANGLE) {
             float fresnelA = N_AIR * cos(incidenceAngle);
@@ -224,9 +236,9 @@ void main() {
             waterNormal = normalize(vec3(WAVE_AMPLITUDE*sin(world.x*WAVE_FREQUENCY + float(timestamp)*WAVE_VELOCITY), 1., WAVE_AMPLITUDE*cos(world.z*WAVE_FREQUENCY + float(timestamp)*WAVE_VELOCITY)));
           }
           float incidenceAngle = acos(dot(waterNormal, normalize(delta)));
-          vec3 deltaRefract = refract(normalize(delta), waterNormal, N_AIR/N_WATER) * distStep;
+          vec3 deltaRefract = refract(normalize(delta), waterNormal, N_AIR/N_WATER) * DIST_STEP;
           float refractionAngle = acos(dot(waterNormal, normalize(deltaRefract)));
-          vec3 deltaReflect = reflect(normalize(delta), waterNormal) * distStep;
+          vec3 deltaReflect = reflect(normalize(delta), waterNormal) * DIST_STEP;
           float fresnelA = N_WATER * cos(incidenceAngle);
           float fresnelB = N_AIR * cos(refractionAngle);
           float fresnelParallel = pow((fresnelA - fresnelB)/(fresnelA + fresnelB), 2.);
@@ -240,7 +252,9 @@ void main() {
             delta = deltaRefract;
           }
         }
-        water += advanceDist;
+        water += advanceDist*level / 255.;
+        // c = vec3(blue * level / 1024.);
+        // break;
       } else {
         c = vec3(green);
         // float shade = (dot(normal, lightDir) + 1.0) / 3.0 + 0.33;
@@ -264,12 +278,15 @@ void main() {
     if (water > 0.) {
       float waterVisibility = pow(2., -0.01 * water);
       c = (c * waterVisibility + blue * (1. - waterVisibility)) * waterVisibility;
+      // c = vec3(water * 255.);
     }
     color += c;
     if (rayFraction == 1.) {
       break;
     }
   }
+  // color = vec3(gl_FragCoord.xy, 0.);
+  // color = vec3(w, h, 0);
   if (length(gl_FragCoord.xy - vec2(w / 2, h / 2)) < 20.0 && (int(gl_FragCoord.x) == int(w / 2) || int(gl_FragCoord.y) == int(h / 2))) {
     fragColor = vec4(1.0 - color / 255.0, 1.0);
   } else {

@@ -120,6 +120,31 @@ export default class Shader {
         const framebuffer = this.gl.createFramebuffer();
         this.gl.bindFramebuffer(this.gl.DRAW_FRAMEBUFFER, framebuffer);
         this.gl.framebufferTexture2D(this.gl.DRAW_FRAMEBUFFER, this.gl.COLOR_ATTACHMENT0, this.gl.TEXTURE_2D, texture, 0);
+        if (!this.drawingToScreen) {
+            if (!this.gl.isFramebuffer(framebuffer)) {
+                throw ("Invalid framebuffer");
+            }
+            var status = this.gl.checkFramebufferStatus(this.gl.FRAMEBUFFER);
+            switch (status) {
+                case this.gl.FRAMEBUFFER_COMPLETE:
+                    console.log('Good');
+                    break;
+                case this.gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+                    throw ("Incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
+                    break;
+                case this.gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+                    throw ("Incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
+                    break;
+                case this.gl.FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
+                    throw ("Incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_DIMENSIONS");
+                    break;
+                case this.gl.FRAMEBUFFER_UNSUPPORTED:
+                    throw ("Incomplete framebuffer: FRAMEBUFFER_UNSUPPORTED");
+                    break;
+                default:
+                    throw ("Incomplete framebuffer: " + status);
+            }
+        }
         return framebuffer;
     }
 
@@ -137,14 +162,16 @@ export default class Shader {
         this.gl.texImage2D(
             this.gl.TEXTURE_2D,
             0,
-            this.gl.RGB,
+            this.gl.RGBA32F,
             this.sampler2d.sizeX,
             this.sampler2d.sizeY,
             0,
-            this.gl.RGB,
-            this.gl.UNSIGNED_BYTE,
+            this.gl.RGBA,
+            this.gl.FLOAT,
             data,
         );
+        // this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
+        // this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
     }
 
     set(uniforms, bypass) {
@@ -209,8 +236,8 @@ export default class Shader {
 
     retrieveFramebuffer() {
         this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.framebuffer);
-        const data = new Uint8Array(this.sampler2d.sizeX * this.sampler2d.sizeY * 4);
-        this.gl.readPixels(0, 0, this.sampler2d.sizeX, this.sampler2d.sizeY, this.gl.RGB, this.gl.UNSIGNED_BYTE, data);
+        const data = new Float32Array(this.sampler2d.sizeX * this.sampler2d.sizeY * 4);
+        this.gl.readPixels(0, 0, this.sampler2d.sizeX, this.sampler2d.sizeY, this.gl.RGBA, this.gl.FLOAT, data);
         this.sampler2d.data = data;
         return data;
     }
