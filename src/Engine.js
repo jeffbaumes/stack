@@ -6,7 +6,7 @@ import GPUProcessing from './GPUProcessing';
 glMatrix.setMatrixArrayType(Array);
 
 export default class Engine {
-  constructor({ vox, worldSize, min, samples, maxDist, distStep }) {
+  constructor({ vox, worldSize, samples, maxDist, distStep }) {
     this.canvas = document.getElementById('canvas');
     window.addEventListener('resize', resizeCanvas, false);
     function resizeCanvas() {
@@ -14,7 +14,6 @@ export default class Engine {
       this.canvas.height = window.innerHeight / 2;
     }
     resizeCanvas.bind(this)();
-    this.min = min;
     this.setUpVariables();
 
     this.processing = new GPUProcessing({
@@ -43,10 +42,6 @@ export default class Engine {
         },
         eye: {
           value: this.eye,
-          type: 'vec3',
-        },
-        minSize: {
-          value: this.min,
           type: 'vec3',
         },
         timestamp: {
@@ -128,11 +123,24 @@ export default class Engine {
     document.onmousemove = (e) => handler(e);
     this.canvas.addEventListener('mouseup', (e) => {
       this.mousedown = false;
+      this.processing.simulator.updateUniforms({ modify: false })
       this.mouseButton = e.button;
     })
     this.canvas.addEventListener('mousedown', (e) => {
       this.canvas.requestPointerLock();
       this.mousedown = true;
+      this.processing.simulator.updateUniforms({modify: true})
+
+      const buildValue = [this.buildBlock, 0, 0, 0];
+      if (this.buildBlock === 2) {
+        buildValue[1] = 255;
+      }
+      if (e.button === 0) {
+        buildValue[0] = 0;
+        buildValue[1] = 0;
+      }
+
+      this.processing.simulator.updateUniforms({ modifyValue: buildValue })
       this.mouseButton = e.button
     });
 
@@ -140,7 +148,7 @@ export default class Engine {
   }
 
   placeBlocks() {
-    if (this.mousedown && document.pointerLockElement === this.canvas) {
+    if (false && this.mousedown && document.pointerLockElement === this.canvas) {
       if (this.mouseButton === 2 || this.mouseButton === 0) {
         const build = this.mouseButton === 2;
         this.vox = this.processing.framebuffer2.retrieve();
@@ -225,9 +233,9 @@ export default class Engine {
   }
 
   getVoxel(p) {
-    const xi = Math.floor(p[0] - this.min[0]);
-    const yi = Math.floor(p[1] - this.min[1]);
-    const zi = Math.floor(p[2] - this.min[2]);
+    const xi = Math.floor(p[0]);
+    const yi = Math.floor(p[1]);
+    const zi = Math.floor(p[2]);
     if (xi < 0 || xi >= this.worldSize[0] || yi < 0 || yi >= this.worldSize[1] || zi < 0 || zi >= this.worldSize[2]) {
       return 0;
     }
@@ -235,9 +243,9 @@ export default class Engine {
   }
 
   setVoxel(p, val) {
-    const xi = Math.floor(p[0] - this.min[0]);
-    const yi = Math.floor(p[1] - this.min[1]);
-    const zi = Math.floor(p[2] - this.min[2]);
+    const xi = Math.floor(p[0]);
+    const yi = Math.floor(p[1]);
+    const zi = Math.floor(p[2]);
     if (xi < 0 || xi >= this.worldSize[0] || yi < 0 || yi >= this.worldSize[1] || zi < 0 || zi >= this.worldSize[2]) {
       return 0;
     }

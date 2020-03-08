@@ -1,5 +1,5 @@
 export default class Framebuffer {
-  constructor({gl, texture} = {}) {
+  constructor({gl, texture}) {
     this.gl = gl;
     this.texture = texture;
     this.id = this.gl.createFramebuffer();

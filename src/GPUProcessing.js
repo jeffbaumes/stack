@@ -36,6 +36,7 @@ export default class GPUProcessing {
       uniforms: {
         ...rendererUniforms,
         ...voxelsSizeUniforms,
+        renderVoxelIndex: { value: 0, type: 'int' },
       },
       fragmentSource: rendererFrag,
       name: 'renderer',
@@ -46,18 +47,25 @@ export default class GPUProcessing {
       uniforms: {
         ...simulationUniforms,
         ...voxelsSizeUniforms,
+        modify: { value: 1, type: 'int' },
+        modifyIndex: { value: [0, 0, 0, 0], type: 'vec4' },
+        modifyValue: { value: [0, 0, 0], type: 'vec3' },
       },
       fragmentSource: simulatorFrag,
       name: 'simulator',
     });
 
-    let textureConfig = {gl: this.gl, size: {width: voxelsSize.x, height: voxelsSize.y * voxelsSize.z}, data: voxels};
+    let textureConfig = { gl: this.gl, size: { width: voxelsSize.x, height: voxelsSize.y * voxelsSize.z }, data: voxels };
 
     this.texture1 = new Texture(textureConfig);
     this.texture2 = new Texture(textureConfig);
-    this.framebuffer1 = new Framebuffer({gl: this.gl, texture: this.texture1});
-    this.framebuffer2 = new Framebuffer({gl: this.gl, texture: this.texture2});
-    this.screenFramebuffer = new DummyFramebuffer({size: {width: canvas.width, height: canvas.height}});
+    const voxelIndexBuffer = new Float32Array([0, 0, 0, 0]);
+    this.voxelIndexTexture = new Texture({ gl: this.gl, size: { width: 1, height: 1 }, data: voxelIndexBuffer });
+    this.framebuffer1 = new Framebuffer({ gl: this.gl, texture: this.texture1 });
+    this.framebuffer2 = new Framebuffer({ gl: this.gl, texture: this.texture2 });
+    this.voxelIndexFramebuffer = new Framebuffer({ gl: this.gl, texture: this.voxelIndexTexture });
+    this.dummyFramebuffer = new DummyFramebuffer({ size: { width: canvas.width, height: canvas.height } });
+    this.screenFramebuffer = this.dummyFramebuffer;
     this._assignTexturesAndFramebuffers();
     this.timestep = 0;
   }
@@ -95,7 +103,18 @@ export default class GPUProcessing {
       this.timestep += 1;
       this._swapTexturesAndFramebuffers();
     }
+    this.renderer.updateUniforms({ renderVoxelIndex: 1 });
+    this.screenFramebuffer = this.voxelIndexFramebuffer;
+    this._assignTexturesAndFramebuffers();
     this.renderer.render();
+    const voxelIndex = this.voxelIndexFramebuffer.retrieve();
+    this.simulator.updateUniforms({ modifyIndex: voxelIndex });
+
+    this.renderer.updateUniforms({ renderVoxelIndex: 0 });
+    this.screenFramebuffer = this.dummyFramebuffer;
+    this._assignTexturesAndFramebuffers();
+    this.renderer.render();
+
     this._swapTexturesAndFramebuffers();
   }
 }

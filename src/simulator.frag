@@ -2,12 +2,23 @@
 
 precision highp float;
 
+uniform vec4 modifyIndex;
+uniform vec3 modifyValue;
+uniform bool modify;
+
+uniform int brushMode;
+uniform float brushSize;
+
 uniform int sx;
 uniform int sy;
 uniform int sz;
 uniform int timestep;
 uniform sampler2D vox;
 out vec4 fragColor;
+
+const int BRUSH_BOX = 0;
+const int BRUSH_SPHERE = 1;
+const int BRUSH_DIAMOND = 2;
 
 const float WATER_THRESHOLD = 0.001;
 const float MIN_WATER = -1.;
@@ -22,11 +33,9 @@ vec4 getVoxel(vec3 i) {
     return vec4(-1, 0, 0, 0);
   }
   return texelFetch(vox, ivec2(i.x, i.z * float(sy) + i.y), 0);
-  // return texelFetch(vox, ivec2(i.x, i.z * 32. + i.y), 0) * 255.;
 }
 
 vec4 airWaterMaterial(float waterContent) {
-  // waterContent = round(waterContent);
   if (waterContent >= WATER_THRESHOLD) {
     return vec4(2, waterContent, 0, 0);
   }
@@ -84,11 +93,8 @@ vec4 materialConv(vec3 p) {
     if ((md0.x == 0. || md0.x == 2.) && a0 > MIN_WATER && (md1.x == 0. || md1.x == 2.) && a1 > MIN_WATER) {
       waterContent = dir * a0 + (1. - dir) * a1;
     } else if ((md0.x == 0. || md0.x == 2.) && a0 > MIN_WATER) {
-      // waterContent = dir * a0 + (1. - dir) * h;
       waterContent = dir * a0 + dir * h;
     } else if ((md1.x == 0. || md1.x == 2.) && a1 > MIN_WATER) {
-      // waterContent = (1. - dir) * a1 + dir * h;
-      // This could get bigger than max (compression).
       waterContent = (1. - dir) * a1 + (1. - dir) * h;
     }
     vec4 voxel = airWaterMaterial(waterContent);
@@ -102,8 +108,39 @@ vec4 materialConv(vec3 p) {
   return here;
 }
 
+vec3 unpackNormal(float n) {
+  if (abs(n) == 1.) {
+    return vec3(sign(n), 0, 0);
+  }
+  if (abs(n) == 2.) {
+    return vec3(0, sign(n), 0);
+  }
+  return vec3(0, 0, sign(n));
+}
+
+bool brushHit(vec3 p, vec4 voxel) {
+  if (modifyValue.x != 0.) {
+    p = p - unpackNormal(modifyIndex.w);
+  }
+  vec3 diff = abs(modifyIndex.xyz - p);
+  switch (brushMode) {
+    case BRUSH_SPHERE:
+      return length(diff) <= brushSize;
+    case BRUSH_BOX:
+      return max(diff.x, max(diff.y, diff.z)) <= brushSize;
+    case BRUSH_DIAMOND:
+      return dot(diff, vec3(1)) <= brushSize;
+  }
+  return false;
+}
+
 void main() {
   ivec2 px = ivec2(gl_FragCoord.xy);
   vec3 p = vec3(px.x, px.y % sy, px.y / sy);
-  fragColor = materialConv(p);
+  vec4 voxel = getVoxel(p);
+  if (modify && brushHit(p, voxel) && (modifyValue.x == 0. || voxel.x == 0.)) {
+    fragColor = vec4(modifyValue, 0);
+  } else {
+    fragColor = materialConv(p);
+  }
 }

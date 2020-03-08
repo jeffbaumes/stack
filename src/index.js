@@ -28,7 +28,6 @@ for (let x = 0; x < worldSize[0]; x += 1) {
 const engine = new Engine({
   vox,
   worldSize,
-  min: [-5, -5, -5],
   samples: 1,
   maxDist: 200,
   distStep: 0.25,

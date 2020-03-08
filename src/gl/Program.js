@@ -121,6 +121,9 @@ export default class Program {
         case 'vec3':
           this.gl.uniform3f(location, ...value);
           break;
+        case 'vec4':
+          this.gl.uniform4f(location, ...value);
+          break;
         case 'int':
           this.gl.uniform1i(location, value);
           break;
