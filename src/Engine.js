@@ -1,6 +1,6 @@
 import { glMatrix, mat4, vec3 } from 'gl-matrix';
 import Mousetrap from 'mousetrap';
-
+import GameUI from './GameUI';
 import GPUProcessing from './GPUProcessing';
 
 glMatrix.setMatrixArrayType(Array);
@@ -59,6 +59,8 @@ export default class Engine {
       voxels: vox,
       voxelsSize: { x: worldSize[0], y: worldSize[1], z: worldSize[2] },
     });
+
+    this.ui = new GameUI(this.processing.simulator, this.processing.renderer, this.canvas);
 
     this.vox = vox;
     this.worldSize = worldSize;

@@ -70,8 +70,6 @@ export default class UI {
     }
 
     _onChange(name, value) {
-        const obj = {};
-        obj[ name ] = value;
-        this.uniformsModifier(obj);
+        this.uniformsModifier(name, value);
     }
 }

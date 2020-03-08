@@ -48,6 +48,8 @@ export default class GPUProcessing {
         ...simulationUniforms,
         ...voxelsSizeUniforms,
         modify: { value: 1, type: 'int' },
+        brushSize: { value: 1, type: 'float' },
+        brushMode: { value: 0, type: 'int' },
         modifyIndex: { value: [0, 0, 0, 0], type: 'vec4' },
         modifyValue: { value: [0, 0, 0], type: 'vec3' },
       },

@@ -1,6 +1,5 @@
 import Engine from './Engine';
 import { turbulence2D } from './noise';
-import UI from './ui/UI';
 
 const worldSize = [ 256, 64, 256 ];
 
