@@ -1,12 +1,12 @@
-import UI from "./ui/UI";
+import UI from './ui/UI';
 
 const OUTLINE = [
   {
     name: 's_brushMode',
     niceName: 'Brush Mode',
     value: [0, 'Box'],
-    values: [[0, 'Box'], [1, 'Sphere'], [0, 'Diamond']],
-    type: 'Cycle'
+    values: [[0, 'Box'], [1, 'Sphere'], [2, 'Diamond']],
+    type: 'Cycle',
   },
   {
     name: 's_brushSize',
@@ -16,8 +16,8 @@ const OUTLINE = [
     min: 1,
     step: 0.5,
     type: 'Bar',
-  }
-]
+  },
+];
 
 
 export default class GameUI {
@@ -25,17 +25,17 @@ export default class GameUI {
     this.simulator = simulator;
     this.renderer = renderer;
     this.canvas = canvas;
-    document.addEventListener('pointerlockchange', () => this._onPointerLockChange())
-    this.ui = new UI({outline: OUTLINE, uniformsModifier: this._onModify.bind(this)})
+    document.addEventListener('pointerlockchange', () => this._onPointerLockChange());
+    this.ui = new UI({ outline: OUTLINE, uniformsModifier: this._onModify.bind(this) });
   }
 
   _onPointerLockChange() {
     if (document.pointerLockElement === this.canvas) {
-      console.log('Change hide')
-      this.hide()
+      console.log('Change hide');
+      this.hide();
     } else {
-      console.log('Change show')
-      this.show()
+      console.log('Change show');
+      this.show();
     }
   }
 
@@ -43,10 +43,10 @@ export default class GameUI {
     const obj = {};
     if (name.slice(0, 2) === 's_') {
       obj[name.slice(2)] = value;
-      this.simulator.updateUniforms(obj)
+      this.simulator.updateUniforms(obj);
     } else if (name.slice(0, 2) === 'r_') {
-      obj[ name.slice(2) ] = value;
-      this.renderer.updateUniforms(obj)
+      obj[name.slice(2)] = value;
+      this.renderer.updateUniforms(obj);
     }
   }
 

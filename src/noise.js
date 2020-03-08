@@ -1,14 +1,14 @@
 import SimplexNoise from 'simplex-noise';
-var simplex = new SimplexNoise();
 
-export function turbulence2D(x, y, oct, ampscale = 0.5, freqscale = 2.0) {
+const simplex = new SimplexNoise();
+
+export default function turbulence2D(x, y, oct, ampscale = 0.5, freqscale = 2.0) {
   let amp = 1;
   let out = (0.5 + 0.5 * simplex.noise2D(x, y));
-  for (let i = 1; i < oct; i++) {
+  for (let i = 1; i < oct; i += 1) {
     amp *= ampscale;
     x *= freqscale;
     y *= freqscale;
-    z *= freqscale;
     out += amp * (0.5 + 0.5 * simplex.noise2D(x, y));
   }
   return out;

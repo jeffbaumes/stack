@@ -1,16 +1,26 @@
-var path = require('path');
+const path = require('path');
 
 module.exports = {
   devServer: {
     contentBase: path.join(__dirname, 'dist'),
     compress: true,
-    port: 9000
+    port: 9000,
   },
   module: {
     rules: [
       {
         test: /\.frag$/i,
         use: 'raw-loader',
+      },
+      {
+        test: /\.jsx?$/,
+        enforce: 'pre',
+        loader: 'eslint-loader',
+        exclude: /node_modules/,
+        options: {
+          emitWarning: true,
+          configFile: './.eslintrc.js',
+        },
       },
       {
         test: /\.s[ac]ss$/i,

@@ -1,5 +1,5 @@
 export default class DummyFramebuffer {
-  constructor({size}) {
+  constructor({ size }) {
     this.size = size;
     this.id = null;
   }
