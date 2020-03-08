@@ -1,5 +1,5 @@
 export default class Texture {
-  constructor({gl, size = {width: 0, height: 0}, data}) {
+  constructor({ gl, size = { width: 0, height: 0 }, data }) {
     this.gl = gl;
     this.id = this.gl.createTexture();
     this.size = size;

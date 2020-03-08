@@ -5,11 +5,10 @@ const DEFAULT_VERTEX_POSITIONS = [
   -1.0, 1.0,
   -1.0, 1.0,
   1.0, -1.0,
-  1.0, 1.0
+  1.0, 1.0,
 ];
 const DEFAULT_VERTEX_NAME = 'a_position';
-const DEFAULT_VERTEX_SHADER =
-  `#version 300 es
+const DEFAULT_VERTEX_SHADER = `#version 300 es
   in vec2 a_position;
   void main() {
       gl_Position = vec4(a_position, 0.0, 1.0);
@@ -41,12 +40,12 @@ export default class Program {
   _createProgram(vertexSource, fragmentSource) {
     const program = this.gl.createProgram();
     const vertShader = this._buildShader(
-        this.gl.VERTEX_SHADER,
-        vertexSource,
+      this.gl.VERTEX_SHADER,
+      vertexSource,
     );
     const fragShader = this._buildShader(
-        this.gl.FRAGMENT_SHADER,
-        fragmentSource,
+      this.gl.FRAGMENT_SHADER,
+      fragmentSource,
     );
     this.gl.attachShader(program, vertShader);
     this.gl.attachShader(program, fragShader);
@@ -68,23 +67,23 @@ export default class Program {
   }
 
   _loadTrianglePositions(positions, fieldCount, name) {
-    let buffer = this.gl.createBuffer();
+    const buffer = this.gl.createBuffer();
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
     this.gl.bufferData(
-        this.gl.ARRAY_BUFFER,
-        new Float32Array(positions),
-        this.gl.STATIC_DRAW
+      this.gl.ARRAY_BUFFER,
+      new Float32Array(positions),
+      this.gl.STATIC_DRAW,
     );
 
-    let positionLocation = this.gl.getAttribLocation(this.id, name);
+    const positionLocation = this.gl.getAttribLocation(this.id, name);
     this.gl.enableVertexAttribArray(positionLocation);
     this.gl.vertexAttribPointer(
-        positionLocation,
-        fieldCount,
-        this.gl.FLOAT,
-        this.gl.FALSE,
-        fieldCount * Float32Array.BYTES_PER_ELEMENT,
-        0
+      positionLocation,
+      fieldCount,
+      this.gl.FLOAT,
+      this.gl.FALSE,
+      fieldCount * Float32Array.BYTES_PER_ELEMENT,
+      0,
     );
   }
 
@@ -97,22 +96,22 @@ export default class Program {
 
   _setUniformsToDefaults(uniforms) {
     this.updateUniforms(Object.keys(uniforms).reduce((obj, v) => {
-        obj[v] = uniforms[v].value;
-        return obj;
+      obj[v] = uniforms[v].value;
+      return obj;
     }, {}), true);
   }
 
   updateUniforms(newUniforms) {
     this.gl.useProgram(this.id);
     const uniformKeys = Object.keys(this.uniforms);
-    for (let i = 0; i < uniformKeys.length; i++) {
+    for (let i = 0; i < uniformKeys.length; i += 1) {
       const uniformName = uniformKeys[i];
       const uniformConfig = this.uniforms[uniformName];
       const value = newUniforms[uniformName];
       if (value === undefined) {
         continue;
       }
-      const type = uniformConfig.type;
+      const { type } = uniformConfig;
       const location = this.uniformLocations[uniformName];
       switch (type) {
         case 'mat4':
@@ -130,9 +129,11 @@ export default class Program {
         case 'float':
           this.gl.uniform1f(location, value);
           break;
-        }
-        uniformConfig.value = value;
+        default:
+          break;
       }
+      uniformConfig.value = value;
+    }
   }
 
   setTexture(texture) {
@@ -150,7 +151,7 @@ export default class Program {
       0,
       0,
       drawingSize.width,
-      drawingSize.height
+      drawingSize.height,
     );
     this.gl.bindTexture(this.gl.TEXTURE_2D, this.texture.id);
     this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.framebuffer.id);

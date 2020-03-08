@@ -1,18 +1,20 @@
 import { glMatrix, mat4, vec3 } from 'gl-matrix';
 import Mousetrap from 'mousetrap';
-
+import GameUI from './GameUI';
 import GPUProcessing from './GPUProcessing';
 
 glMatrix.setMatrixArrayType(Array);
 
 export default class Engine {
-  constructor({ vox, worldSize, samples, maxDist, distStep }) {
-    this.canvas = document.getElementById('canvas');
-    window.addEventListener('resize', resizeCanvas, false);
+  constructor({
+    vox, worldSize, samples, maxDist, distStep,
+  }) {
     function resizeCanvas() {
       this.canvas.width = window.innerWidth / 2;
       this.canvas.height = window.innerHeight / 2;
     }
+    this.canvas = document.getElementById('canvas');
+    window.addEventListener('resize', resizeCanvas, false);
     resizeCanvas.bind(this)();
     this.setUpVariables();
 
@@ -60,6 +62,8 @@ export default class Engine {
       voxelsSize: { x: worldSize[0], y: worldSize[1], z: worldSize[2] },
     });
 
+    this.ui = new GameUI(this.processing.simulator, this.processing.renderer, this.canvas);
+
     this.vox = vox;
     this.worldSize = worldSize;
     this.setUpMousetrap();
@@ -70,16 +74,16 @@ export default class Engine {
     this.keys = {};
     function listenForKey(key) {
       this.keys[key] = false;
-      Mousetrap.bind(key, () => this.keys[key] = true, 'keydown');
-      Mousetrap.bind(key, () => this.keys[key] = false, 'keyup');
-      Mousetrap.bind(`shift+${key}`, () => this.keys[key] = true, 'keydown');
-      Mousetrap.bind(`shift+${key}`, () => this.keys[key] = false, 'keyup');
+      Mousetrap.bind(key, () => { this.keys[key] = true; }, 'keydown');
+      Mousetrap.bind(key, () => { this.keys[key] = false; }, 'keyup');
+      Mousetrap.bind(`shift+${key}`, () => { this.keys[key] = true; }, 'keydown');
+      Mousetrap.bind(`shift+${key}`, () => { this.keys[key] = false; }, 'keyup');
     }
     ['space', 'shift', 'w', 'a', 's', 'd', 'b', 'v'].forEach(listenForKey.bind(this));
-    Mousetrap.bind('1', () => this.buildBlock = 1);
-    Mousetrap.bind('shift+1', () => this.buildBlock = 1);
-    Mousetrap.bind('2', () => this.buildBlock = 2);
-    Mousetrap.bind('shift+2', () => this.buildBlock = 2);
+    Mousetrap.bind('1', () => { this.buildBlock = 1; });
+    Mousetrap.bind('shift+1', () => { this.buildBlock = 1; });
+    Mousetrap.bind('2', () => { this.buildBlock = 2; });
+    Mousetrap.bind('shift+2', () => { this.buildBlock = 2; });
   }
 
   setUpVariables() {
@@ -110,7 +114,10 @@ export default class Engine {
       if (document.pointerLockElement === this.canvas) {
         // Update elevation
         this.elevation -= e.movementY * this.turnSpeed;
-        this.elevation = Math.min(Math.PI / 2 - 0.01, Math.max(-Math.PI / 2 + 0.01, this.elevation));
+        this.elevation = Math.min(
+          Math.PI / 2 - 0.01,
+          Math.max(-Math.PI / 2 + 0.01, this.elevation),
+        );
         vec3.rotateX(this.look, [0, 0, -1], [0, 0, 0], this.elevation);
 
         // Update azimuth
@@ -119,17 +126,17 @@ export default class Engine {
         vec3.rotateY(this.look, this.look, [0, 0, 0], this.azimuth);
         vec3.cross(this.right, this.forward, this.up);
       }
-    }
+    };
     document.onmousemove = (e) => handler(e);
     this.canvas.addEventListener('mouseup', (e) => {
       this.mousedown = false;
-      this.processing.simulator.updateUniforms({ modify: false })
+      this.processing.simulator.updateUniforms({ modify: false });
       this.mouseButton = e.button;
-    })
+    });
     this.canvas.addEventListener('mousedown', (e) => {
       this.canvas.requestPointerLock();
       this.mousedown = true;
-      this.processing.simulator.updateUniforms({modify: true})
+      this.processing.simulator.updateUniforms({ modify: true });
 
       const buildValue = [this.buildBlock, 0, 0, 0];
       if (this.buildBlock === 2) {
@@ -140,47 +147,17 @@ export default class Engine {
         buildValue[1] = 0;
       }
 
-      this.processing.simulator.updateUniforms({ modifyValue: buildValue })
-      this.mouseButton = e.button
+      this.processing.simulator.updateUniforms({ modifyValue: buildValue });
+      this.mouseButton = e.button;
     });
 
     setInterval(this.placeBlocks.bind(this), 100);
   }
 
   placeBlocks() {
-    if (false && this.mousedown && document.pointerLockElement === this.canvas) {
-      if (this.mouseButton === 2 || this.mouseButton === 0) {
-        const build = this.mouseButton === 2;
-        this.vox = this.processing.framebuffer2.retrieve();
-        let world = this.getWorldHit({ before: build });
-        if (world) {
-          const s = this.brushSize * 2 + 1;
-          for (let x = -this.brushSize; x <= this.brushSize; x += 1) {
-            for (let y = -this.brushSize; y <= this.brushSize; y += 1) {
-              for (let z = -this.brushSize; z <= this.brushSize; z += 1) {
-                const worldIndex = [world[0]+ x, world[1] + y, world[2] + z];
-                const worldMaterial = this.getVoxel(worldIndex);
-                if (x * x + y * y + z * z < 3 * 3 && (!build || worldMaterial === 0)) {
-                  if (build) {
-                    this.setVoxel(worldIndex, this.buildBlock);
-                  } else {
-                    this.setVoxel(worldIndex, 0);
-                    this.setVoxel(worldIndex + 1, 0);
-                  }
-                }
-              }
-            }
-          }
-          this.processing.texture1.set(this.vox);
-        }
-      }
-    } else if (this.mousedown) {
+    if (this.mousedown) {
       this.canvas.requestPointerLock();
     }
-  }
-
-  load() {
-    this.processing.load();
   }
 
   renderLoop(timestamp) {
@@ -188,7 +165,7 @@ export default class Engine {
       this.startTime = timestamp;
       this.lastTime = timestamp;
     }
-    let dt = (timestamp - this.lastTime) / 1000;
+    const dt = (timestamp - this.lastTime) / 1000;
     this.lastTime = timestamp;
 
     // Update position
@@ -236,7 +213,11 @@ export default class Engine {
     const xi = Math.floor(p[0]);
     const yi = Math.floor(p[1]);
     const zi = Math.floor(p[2]);
-    if (xi < 0 || xi >= this.worldSize[0] || yi < 0 || yi >= this.worldSize[1] || zi < 0 || zi >= this.worldSize[2]) {
+    if (
+      xi < 0 || xi >= this.worldSize[0]
+      || yi < 0 || yi >= this.worldSize[1]
+      || zi < 0 || zi >= this.worldSize[2]
+    ) {
       return 0;
     }
     return this.vox[(zi * this.worldSize[0] * this.worldSize[1] + yi * this.worldSize[0] + xi) * 4];
@@ -246,8 +227,12 @@ export default class Engine {
     const xi = Math.floor(p[0]);
     const yi = Math.floor(p[1]);
     const zi = Math.floor(p[2]);
-    if (xi < 0 || xi >= this.worldSize[0] || yi < 0 || yi >= this.worldSize[1] || zi < 0 || zi >= this.worldSize[2]) {
-      return 0;
+    if (
+      xi < 0 || xi >= this.worldSize[0]
+      || yi < 0 || yi >= this.worldSize[1]
+      || zi < 0 || zi >= this.worldSize[2]
+    ) {
+      return;
     }
     const index = (zi * this.worldSize[0] * this.worldSize[1] + yi * this.worldSize[0] + xi) * 4;
     this.vox[index] = val;
