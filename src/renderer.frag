@@ -7,6 +7,13 @@ uniform bool renderVoxelIndex;
 uniform int sx;
 uniform int sy;
 uniform int sz;
+uniform bool u_reflection;
+uniform bool u_refraction;
+uniform bool u_ambientOcclusion;
+uniform bool u_directionalLighting;
+uniform bool u_showFog;
+uniform float u_waterAttenuationDistance;
+uniform float u_renderDistance;
 uniform int timestamp;
 uniform mat4 viewMatrixInverse;
 uniform vec3 eye;
@@ -146,7 +153,11 @@ void main() {
   vec3 world;
   vec3 normal;
   bool hit = false;
-  for (int s = 0; s < 2; s += 1) {
+  int maxSamples = 2;
+  if (!u_reflection || !u_refraction) {
+    maxSamples = 1;
+  }
+  for (int s = 0; s < maxSamples; s += 1) {
     vec3 delta = normalize(pixel - eye);
     world = eye;
     vec3 c = blue;
@@ -158,14 +169,11 @@ void main() {
     int material = lastMaterial;
     int bounces = 0;
     normal = vec3(0., 1., 0.);
-    float d = 0.;
-    int iter = 0;
-    int maxIter = 400;
+    float dist = 0.;
     bool inWorld = false;
-    while (iter < maxIter) {
-      iter += 1;
+    while (dist < u_renderDistance) {
       float advanceDist = advance(delta, world, normal);
-      d += advanceDist;
+      dist += advanceDist;
       if (world.x > float(sx) || world.x < 0. || world.y > float(sy) || world.y < 0. || world.z > float(sz) || world.z < 0.) {
         if (inWorld) {
           break;
@@ -195,12 +203,17 @@ void main() {
             float fresnelPerpendicular = pow((fresnelB - fresnelA)/(fresnelB + fresnelA), 2.);
             reflectionPercentage = 0.5*(fresnelParallel + fresnelPerpendicular);
           }
-          if (s == 0) {
-            rayFraction *= reflectionPercentage;
+          if (u_reflection && (s == 0 || !u_refraction)) {
             delta = deltaReflect;
-          } else {
-            rayFraction *= (1. - reflectionPercentage);
+            if (u_refraction) {
+              rayFraction *= reflectionPercentage;
+            }
+          }
+          if (u_refraction && (s == 1 || !u_reflection)) {
             delta = deltaRefract;
+            if (u_reflection) {
+              rayFraction *= (1. - reflectionPercentage);
+            }
           }
         }
         fog += advanceDist;
@@ -223,12 +236,17 @@ void main() {
           float fresnelParallel = pow((fresnelA - fresnelB)/(fresnelA + fresnelB), 2.);
           float fresnelPerpendicular = pow((fresnelB - fresnelA)/(fresnelB + fresnelA), 2.);
           float reflectionPercentage = max(0., min(1., 0.5*(fresnelParallel + fresnelPerpendicular)));
-          if (s == 0) {
-            rayFraction *= reflectionPercentage;
+          if (u_reflection && (s == 0 || !u_refraction)) {
             delta = deltaReflect;
-          } else {
-            rayFraction *= (1. - reflectionPercentage);
+            if (u_refraction) {
+              rayFraction *= reflectionPercentage;
+            }
+          }
+          if (u_refraction && (s == 1 || !u_reflection)) {
             delta = deltaRefract;
+            if (u_reflection) {
+              rayFraction *= (1. - reflectionPercentage);
+            }
           }
         }
         water += advanceDist*level / 255.;
@@ -238,18 +256,16 @@ void main() {
         // break;
       } else {
         c = vec3(green);
-        float shade = (dot(normal, lightDir) + 1.0) / 3.0 + 0.33;
-        c *= shade;
+        if (u_directionalLighting) {
+          float shade = (dot(normal, lightDir) + 1.0) / 3.0 + 0.33;
+          c *= shade;
+        }
         hit = true;
         break;
       }
     }
-    // // Fog
-    // if (fog > 0.) {
-    //   fog = fog / maxDist.0;
-    //   c = fog * blue + (1. - fog) * c;
-    // }
-    if (material == 1) {
+
+    if (material == 1 && u_ambientOcclusion) {
       float occlusion = ambientOcclusion(world, normal);
       c *= occlusion;
     }
@@ -258,10 +274,17 @@ void main() {
     // Light gets cut in half for roughly every 10m of water.
     // https://www.researchgate.net/figure/Penetration-of-Light-of-Various-Wavelengths-through-Water-Blue-Light-is-the-Strongest_fig3_220785640
     if (water > 0.) {
-      float waterVisibility = pow(2., -0.01 * water);
+      float waterVisibility = pow(2., -water / u_waterAttenuationDistance);
       c = (c * waterVisibility + blue * (1. - waterVisibility)) * waterVisibility;
       // c = vec3(water * 255.);
     }
+
+    // Fog
+    if (fog > 0. && u_showFog) {
+      fog = fog / u_renderDistance;
+      c = fog * blue + (1. - fog) * c;
+    }
+
     color += c;
     if (rayFraction == 1.) {
       break;

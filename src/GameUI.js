@@ -23,6 +23,60 @@ const OUTLINE = [
     value: false,
     type: 'Button',
   },
+  {
+    name: 'r_u_renderDistance',
+    niceName: 'Render Distance',
+    value: 200,
+    max: 400,
+    min: 50,
+    step: 1,
+    type: 'Bar',
+  },
+  {
+    name: 'r_u_reflection',
+    niceName: 'Reflection',
+    value: true,
+    type: 'Button',
+  },
+  {
+    name: 'r_u_refraction',
+    niceName: 'Refraction',
+    value: true,
+    type: 'Button',
+  },
+  {
+    name: 'r_u_ambientOcclusion',
+    niceName: 'Ambient Occlusion',
+    value: true,
+    type: 'Button',
+  },
+  {
+    name: 'r_u_directionalLighting',
+    niceName: 'Directional Lighting',
+    value: true,
+    type: 'Button',
+  },
+  {
+    name: 'r_u_showFog',
+    niceName: 'Fog',
+    value: false,
+    type: 'Button',
+  },
+  {
+    name: 'r_u_waterAttenuationDistance',
+    niceName: 'Water Attenuation Distance',
+    value: 100,
+    max: 200,
+    min: 1,
+    step: 1,
+    type: 'Bar',
+  },
+  {
+    name: 's_u_groundGravity',
+    niceName: 'Ground Gravity',
+    value: true,
+    type: 'Button',
+  },
 ];
 
 

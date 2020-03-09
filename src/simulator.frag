@@ -8,6 +8,7 @@ uniform bool modify;
 
 uniform int brushMode;
 uniform float brushSize;
+uniform bool u_groundGravity;
 
 uniform int sx;
 uniform int sy;
@@ -51,19 +52,42 @@ vec4 materialConv(vec3 p) {
   // }
 
   int mode = timestep % 3;
-  if (mode == 0 && (here.x == 0. || here.x == 2.)) {
-    vec4 md0 = getVoxel(p + vec3(0, 1, 0));
-    vec4 md1 = getVoxel(p - vec3(0, 1, 0));
-    float waterContent = here.y;
-    if (md0.x == 0. || md0.x == 2.) {
-      waterContent += min(255. - here.y, md0.y);
+  if (mode == 0) {
+    if (u_groundGravity) {
+      vec4 md0 = getVoxel(p + vec3(0, 1, 0));
+      vec4 md1 = getVoxel(p - vec3(0, 1, 0));
+      if (here.x == 0. || here.x == 2.) {
+        float waterContent = here.y;
+        if (md0.x == 0. || md0.x == 2.) {
+          waterContent += min(255. - here.y, md0.y);
+        } else if (md0.x == 1.) {
+          return md0;
+        }
+        if (md1.x == 0. || md1.x == 2.) {
+          waterContent -= min(here.y, 255. - md1.y);
+        }
+        vec4 voxel = airWaterMaterial(waterContent);
+        voxel += vec4(0, 0, here.zw);
+        return voxel;
+      } else if (here.x == 1.) {
+        if (md1.x == 0. || md1.x == 2.) {
+          return md1;
+        }
+      }
+    } else if (here.x == 0. || here.x == 2.) {
+      vec4 md0 = getVoxel(p + vec3(0, 1, 0));
+      vec4 md1 = getVoxel(p - vec3(0, 1, 0));
+      float waterContent = here.y;
+      if (md0.x == 0. || md0.x == 2.) {
+        waterContent += min(255. - here.y, md0.y);
+      }
+      if (md1.x == 0. || md1.x == 2.) {
+        waterContent -= min(here.y, 255. - md1.y);
+      }
+      vec4 voxel = airWaterMaterial(waterContent);
+      voxel += vec4(0, 0, here.zw);
+      return voxel;
     }
-    if (md1.x == 0. || md1.x == 2.) {
-      waterContent -= min(here.y, 255. - md1.y);
-    }
-    vec4 voxel = airWaterMaterial(waterContent);
-    voxel += vec4(0, 0, here.zw);
-    return voxel;
   } else if (here.x == 0. || here.x == 2.) {
     // vec4 below = getVoxel(p - vec3(0, 1, 0));
     // if (below.x == 0. && below.y == 0.) {
