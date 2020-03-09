@@ -62,7 +62,7 @@ export default class Engine {
       voxelsSize: { x: worldSize[0], y: worldSize[1], z: worldSize[2] },
     });
 
-    this.ui = new GameUI(this.processing.simulator, this.processing.renderer, this.canvas);
+    this.ui = new GameUI(this);
 
     this.vox = vox;
     this.worldSize = worldSize;
@@ -105,8 +105,21 @@ export default class Engine {
     this.elevation = 0;
     this.brushSize = 5;
     this.buildBlock = 1;
+    this.streamBrush = false;
 
     this.boundRenderLoop = this.renderLoop.bind(this);
+  }
+
+  updateBuildValueForEvent(e) {
+    const buildValue = [this.buildBlock, 0, 0, 0];
+    if (this.buildBlock === 2) {
+      buildValue[1] = 255;
+    }
+    if (e.button === 0) {
+      buildValue[0] = 0;
+      buildValue[1] = 0;
+    }
+    this.processing.simulator.updateUniforms({ modifyValue: buildValue });
   }
 
   setUpMouseEvents() {
@@ -128,36 +141,24 @@ export default class Engine {
       }
     };
     document.onmousemove = (e) => handler(e);
-    this.canvas.addEventListener('mouseup', (e) => {
-      this.mousedown = false;
-      this.processing.simulator.updateUniforms({ modify: false });
-      this.mouseButton = e.button;
-    });
     this.canvas.addEventListener('mousedown', (e) => {
-      this.canvas.requestPointerLock();
-      this.mousedown = true;
-      this.processing.simulator.updateUniforms({ modify: true });
-
-      const buildValue = [this.buildBlock, 0, 0, 0];
-      if (this.buildBlock === 2) {
-        buildValue[1] = 255;
+      if (document.pointerLockElement !== this.canvas) {
+        this.canvas.requestPointerLock();
+        return;
       }
-      if (e.button === 0) {
-        buildValue[0] = 0;
-        buildValue[1] = 0;
+      this.updateBuildValueForEvent(e);
+      if (this.streamBrush) {
+        this.processing.simulator.updateUniforms({ modify: true });
+      } else {
+        this.processing.modifyOnce = true;
       }
-
-      this.processing.simulator.updateUniforms({ modifyValue: buildValue });
-      this.mouseButton = e.button;
     });
-
-    setInterval(this.placeBlocks.bind(this), 100);
-  }
-
-  placeBlocks() {
-    if (this.mousedown) {
-      this.canvas.requestPointerLock();
-    }
+    this.canvas.addEventListener('mouseup', () => {
+      if (!this.streamBrush) {
+        return;
+      }
+      this.processing.simulator.updateUniforms({ modify: false });
+    });
   }
 
   renderLoop(timestamp) {

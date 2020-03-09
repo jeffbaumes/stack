@@ -47,8 +47,8 @@ export default class GPUProcessing {
       uniforms: {
         ...simulationUniforms,
         ...voxelsSizeUniforms,
-        modify: { value: 1, type: 'int' },
-        brushSize: { value: 1, type: 'float' },
+        modify: { value: 0, type: 'int' },
+        brushSize: { value: 0, type: 'float' },
         brushMode: { value: 0, type: 'int' },
         modifyIndex: { value: [0, 0, 0, 0], type: 'vec4' },
         modifyValue: { value: [0, 0, 0], type: 'vec3' },
@@ -106,8 +106,15 @@ export default class GPUProcessing {
 
   render() {
     for (let i = 0; i < 5; i += 1) {
+      if (this.modifyOnce) {
+        this.simulator.updateUniforms({ modify: true });
+      }
       this.simulator.updateUniforms({ timestep: this.timestep });
       this.simulator.render();
+      if (this.modifyOnce) {
+        this.simulator.updateUniforms({ modify: false });
+        this.modifyOnce = false;
+      }
       this.timestep += 1;
       this._swapTexturesAndFramebuffers();
     }

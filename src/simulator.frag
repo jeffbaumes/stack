@@ -20,7 +20,7 @@ const int BRUSH_BOX = 0;
 const int BRUSH_SPHERE = 1;
 const int BRUSH_DIAMOND = 2;
 
-const float WATER_THRESHOLD = 0.001;
+const float WATER_THRESHOLD = 128.;
 const float MIN_WATER = -1.;
 const float alpha = 0.5;
 
