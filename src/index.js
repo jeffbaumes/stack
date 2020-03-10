@@ -32,15 +32,18 @@ for (let x = 0; x < worldSize[0]; x += 1) {
 }
 
 async function setupVox() {
-  await localforage.setItem('vox', vox);
   vox = await localforage.getItem('vox');
   return vox;
 }
 
 setupVox().then((voxels) => {
-  const engine = new Engine({
-    vox: voxels,
+  window.engine = new Engine({
+    vox: voxels || vox,
     worldSize,
   });
-  requestAnimationFrame(engine.boundRenderLoop);
+  requestAnimationFrame(window.engine.boundRenderLoop);
 });
+
+window.save = async () => {
+  await localforage.setItem('vox', window.engine.getVox());
+};

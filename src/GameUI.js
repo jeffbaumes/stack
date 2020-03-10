@@ -77,6 +77,15 @@ const OUTLINE = [
     value: true,
     type: 'Button',
   },
+  {
+    name: 'simulationsPerFrame',
+    niceName: 'Simulation Steps Per Frame',
+    value: 5,
+    max: 20,
+    min: 1,
+    step: 1,
+    type: 'Bar',
+  },
 ];
 
 
@@ -105,9 +114,10 @@ export default class GameUI {
     } else if (name.slice(0, 2) === 'r_') {
       obj[name.slice(2)] = value;
       this.engine.processing.renderer.updateUniforms(obj);
-    }
-    if (name === 'streamBrush') {
+    } else if (name === 'streamBrush') {
       this.engine.streamBrush = value;
+    } else if (name === 'simulationsPerFrame') {
+      this.engine.processing.simulationsPerFrame = value;
     }
   }
 

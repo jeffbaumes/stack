@@ -88,6 +88,7 @@ export default class GPUProcessing {
     this.screenFramebuffer = this.dummyFramebuffer;
     this._assignTexturesAndFramebuffers();
     this.timestep = 0;
+    this.simulationsPerFrame = 5;
   }
 
   static _initializeGl(canvas) {
@@ -113,7 +114,7 @@ export default class GPUProcessing {
   }
 
   render() {
-    for (let i = 0; i < 5; i += 1) {
+    for (let i = 0; i < this.simulationsPerFrame; i += 1) {
       if (this.modifyOnce) {
         this.simulator.updateUniforms({ modify: true });
       }
@@ -137,7 +138,5 @@ export default class GPUProcessing {
     this.screenFramebuffer = this.dummyFramebuffer;
     this._assignTexturesAndFramebuffers();
     this.renderer.render();
-
-    this._swapTexturesAndFramebuffers();
   }
 }

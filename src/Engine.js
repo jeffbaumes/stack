@@ -187,14 +187,15 @@ export default class Engine {
       canvasHeight: this.canvas.height,
       viewMatrixInverse: this.viewMatrixInverse,
       eye: this.eye,
-      xKernel: this.xKernel,
-      yKernel: this.yKernel,
-      zKernel: this.zKernel,
       timestamp,
     });
 
     this.processing.render();
 
     requestAnimationFrame(this.boundRenderLoop);
+  }
+
+  getVox() {
+    return this.processing.framebuffer2.retrieve();
   }
 }
