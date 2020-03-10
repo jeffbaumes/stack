@@ -4,7 +4,7 @@ import turbulence2D from './noise';
 
 const worldSize = [256, 64, 256];
 
-let vox = new Float32Array(worldSize[0] * worldSize[1] * worldSize[2] * 4);
+const vox = new Float32Array(worldSize[0] * worldSize[1] * worldSize[2] * 4);
 for (let x = 0; x < worldSize[0]; x += 1) {
   for (let y = 0; y < worldSize[1]; y += 1) {
     for (let z = 0; z < worldSize[2]; z += 1) {
@@ -31,12 +31,12 @@ for (let x = 0; x < worldSize[0]; x += 1) {
   }
 }
 
-async function setupVox() {
-  vox = await localforage.getItem('vox');
-  return vox;
+async function loadVoxels() {
+  const voxels = await localforage.getItem('vox');
+  return voxels;
 }
 
-setupVox().then((voxels) => {
+loadVoxels().then((voxels) => {
   window.engine = new Engine({
     vox: voxels || vox,
     worldSize,

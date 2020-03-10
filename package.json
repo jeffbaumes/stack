@@ -5,7 +5,7 @@
   "scripts": {
     "serve": "webpack-dev-server --watch --host=0.0.0.0",
     "build": "webpack",
-    "deploy": "git push origin `git subtree split --prefix build_folder master`:gh-pages --force"
+    "deploy": "git push origin `git subtree split --prefix dist master`:refs/heads/gh-pages --force"
   },
   "license": "MIT",
   "devDependencies": {
