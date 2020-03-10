@@ -6,9 +6,7 @@ import GPUProcessing from './GPUProcessing';
 glMatrix.setMatrixArrayType(Array);
 
 export default class Engine {
-  constructor({
-    vox, worldSize, samples, maxDist, distStep,
-  }) {
+  constructor({ vox, worldSize }) {
     function resizeCanvas() {
       this.canvas.width = window.innerWidth / 2;
       this.canvas.height = window.innerHeight / 2;
@@ -20,15 +18,6 @@ export default class Engine {
 
     this.processing = new GPUProcessing({
       canvas: this.canvas,
-      consts: {
-        sx: worldSize[0],
-        sy: worldSize[1],
-        sz: worldSize[2],
-        samples,
-        maxDist,
-        distStep,
-      },
-
       rendererUniforms: {
         canvasWidth: {
           value: this.canvas.width,
@@ -51,7 +40,6 @@ export default class Engine {
           type: 'int',
         },
       },
-
       simulationUniforms: {
         timestep: {
           value: 0,
@@ -208,77 +196,5 @@ export default class Engine {
     this.processing.render();
 
     requestAnimationFrame(this.boundRenderLoop);
-  }
-
-  getVoxel(p) {
-    const xi = Math.floor(p[0]);
-    const yi = Math.floor(p[1]);
-    const zi = Math.floor(p[2]);
-    if (
-      xi < 0 || xi >= this.worldSize[0]
-      || yi < 0 || yi >= this.worldSize[1]
-      || zi < 0 || zi >= this.worldSize[2]
-    ) {
-      return 0;
-    }
-    return this.vox[(zi * this.worldSize[0] * this.worldSize[1] + yi * this.worldSize[0] + xi) * 4];
-  }
-
-  setVoxel(p, val) {
-    const xi = Math.floor(p[0]);
-    const yi = Math.floor(p[1]);
-    const zi = Math.floor(p[2]);
-    if (
-      xi < 0 || xi >= this.worldSize[0]
-      || yi < 0 || yi >= this.worldSize[1]
-      || zi < 0 || zi >= this.worldSize[2]
-    ) {
-      return;
-    }
-    const index = (zi * this.worldSize[0] * this.worldSize[1] + yi * this.worldSize[0] + xi) * 4;
-    this.vox[index] = val;
-    if (val === 2) {
-      this.vox[index + 1] = 255;
-    }
-    if (val === 0) {
-      this.vox[index + 1] = 0;
-    }
-  }
-
-  getWorldHit({ distStep = 0.1, maxDist = 100, before = true } = {}) {
-    const p = [0, 0, 0];
-    const world = [0, 0, 0];
-    const delta = [0, 0, 0];
-    vec3.transformMat4(world, p, this.viewMatrixInverse);
-    vec3.sub(delta, world, this.eye);
-    vec3.normalize(delta, delta);
-    vec3.scale(delta, delta, distStep);
-    vec3.copy(world, this.eye);
-    for (let d = 0; d < maxDist; d += distStep) {
-      world[0] += delta[0];
-      world[1] += delta[1];
-      world[2] += delta[2];
-      const material = this.getVoxel(world);
-      if (material) {
-        if (before) {
-          world[0] -= delta[0];
-          world[1] -= delta[1];
-          world[2] -= delta[2];
-        }
-        return world;
-      }
-    }
-    return null;
-  }
-
-  step(timestamp) {
-    if (!this.lastStepTime) {
-      this.lastStepTime = timestamp;
-    }
-    if (timestamp - this.lastStepTime < 250) {
-      return;
-    }
-    this.lastStepTime = timestamp;
-    this.processing.renderStep();
   }
 }

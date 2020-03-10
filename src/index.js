@@ -1,9 +1,10 @@
+import localforage from 'localforage';
 import Engine from './Engine';
 import turbulence2D from './noise';
 
 const worldSize = [256, 64, 256];
 
-const vox = new Float32Array(worldSize[0] * worldSize[1] * worldSize[2] * 4);
+let vox = new Float32Array(worldSize[0] * worldSize[1] * worldSize[2] * 4);
 for (let x = 0; x < worldSize[0]; x += 1) {
   for (let y = 0; y < worldSize[1]; y += 1) {
     for (let z = 0; z < worldSize[2]; z += 1) {
@@ -30,12 +31,16 @@ for (let x = 0; x < worldSize[0]; x += 1) {
   }
 }
 
-const engine = new Engine({
-  vox,
-  worldSize,
-  samples: 1,
-  maxDist: 200,
-  distStep: 0.25,
-});
+async function setupVox() {
+  await localforage.setItem('vox', vox);
+  vox = await localforage.getItem('vox');
+  return vox;
+}
 
-requestAnimationFrame(engine.boundRenderLoop);
+setupVox().then((voxels) => {
+  const engine = new Engine({
+    vox: voxels,
+    worldSize,
+  });
+  requestAnimationFrame(engine.boundRenderLoop);
+});
