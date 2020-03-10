@@ -32,11 +32,11 @@ export default class UIBar extends UIElement {
     const el = new UIElement({
       parent: this.element, type: 'input', id: `${id}-input`, className: 'UIBar-input',
     });
-    el.set('value', value)
-      .set('type', 'range')
+    el.set('type', 'range')
       .set('max', max)
       .set('min', min)
-      .set('step', step);
+      .set('step', step)
+      .set('value', value);
     return el;
   }
 
