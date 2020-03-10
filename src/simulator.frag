@@ -143,6 +143,9 @@ vec3 unpackNormal(float n) {
 }
 
 bool brushHit(vec3 p, vec4 voxel) {
+  if (modifyIndex.x < 0.) {
+    return false;
+  }
   if (modifyValue.x != 0.) {
     p = p - unpackNormal(modifyIndex.w);
   }
