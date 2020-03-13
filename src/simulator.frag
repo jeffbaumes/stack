@@ -10,9 +10,7 @@ uniform int brushMode;
 uniform float brushSize;
 uniform bool u_groundGravity;
 
-uniform int sx;
-uniform int sy;
-uniform int sz;
+uniform ivec3 u_worldSize;
 uniform int timestep;
 uniform sampler2D vox;
 out vec4 fragColor;
@@ -30,10 +28,13 @@ float rand(vec2 co) {
 }
 
 vec4 getVoxel(vec3 i) {
-  if (i.x < 0. || i.x >= float(sx) || i.y < 0. || i.y >= float(sy) || i.z < 0. || i.z >= float(sz)) {
+  if (i.x < 0. || i.x >= float(u_worldSize.x)
+    || i.y < 0. || i.y >= float(u_worldSize.y)
+    || i.z < 0. || i.z >= float(u_worldSize.z)
+  ) {
     return vec4(-1, 0, 0, 0);
   }
-  return texelFetch(vox, ivec2(i.x, i.z * float(sy) + i.y), 0);
+  return texelFetch(vox, ivec2(i.x, i.z * float(u_worldSize.y) + i.y), 0);
 }
 
 vec4 airWaterMaterial(float waterContent) {
@@ -163,7 +164,7 @@ bool brushHit(vec3 p, vec4 voxel) {
 
 void main() {
   ivec2 px = ivec2(gl_FragCoord.xy);
-  vec3 p = vec3(px.x, px.y % sy, px.y / sy);
+  vec3 p = vec3(px.x, px.y % u_worldSize.y, px.y / u_worldSize.y);
   vec4 voxel = getVoxel(p);
   if (modify && brushHit(p, voxel) && (modifyValue.x == 0. || voxel.x == 0.)) {
     fragColor = vec4(modifyValue, 0);

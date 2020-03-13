@@ -18,17 +18,9 @@ export default class GPUProcessing {
     this.gl = GPUProcessing._initializeGl(canvas);
 
     const voxelsSizeUniforms = {
-      sx: {
-        value: voxelsSize.x,
-        type: 'int',
-      },
-      sy: {
-        value: voxelsSize.y,
-        type: 'int',
-      },
-      sz: {
-        value: voxelsSize.z,
-        type: 'int',
+      u_worldSize: {
+        value: [voxelsSize.x, voxelsSize.y, voxelsSize.z],
+        type: 'ivec3',
       },
     };
 
@@ -99,7 +91,7 @@ export default class GPUProcessing {
     this.screenFramebuffer = this.dummyFramebuffer;
     this._assignTexturesAndFramebuffers();
     this.timestep = 0;
-    this.simulationsPerFrame = 5;
+    this.simulationsPerFrame = 1;
     this._generateWorld();
   }
 

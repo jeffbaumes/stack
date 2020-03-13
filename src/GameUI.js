@@ -80,7 +80,7 @@ const OUTLINE = [
   {
     name: 'simulationsPerFrame',
     niceName: 'Simulation Steps Per Frame',
-    value: 5,
+    value: 1,
     max: 20,
     min: 1,
     step: 1,

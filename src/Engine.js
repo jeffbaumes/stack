@@ -19,13 +19,9 @@ export default class Engine {
     this.processing = new GPUProcessing({
       canvas: this.canvas,
       rendererUniforms: {
-        canvasWidth: {
-          value: this.canvas.width,
-          type: 'int',
-        },
-        canvasHeight: {
-          value: this.canvas.height,
-          type: 'int',
+        u_canvasSize: {
+          value: [this.canvas.width, this.canvas.height],
+          type: 'ivec2',
         },
         viewMatrixInverse: {
           value: this.viewMatrixInverse,
