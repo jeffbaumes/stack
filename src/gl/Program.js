@@ -123,6 +123,12 @@ export default class Program {
         case 'vec4':
           this.gl.uniform4f(location, ...value);
           break;
+        case 'ivec3':
+          this.gl.uniform3i(location, ...value);
+          break;
+        case 'ivec4':
+          this.gl.uniform4i(location, ...value);
+          break;
         case 'int':
           this.gl.uniform1i(location, value);
           break;
@@ -153,7 +159,9 @@ export default class Program {
       drawingSize.width,
       drawingSize.height,
     );
-    this.gl.bindTexture(this.gl.TEXTURE_2D, this.texture.id);
+    if (this.texture) {
+      this.gl.bindTexture(this.gl.TEXTURE_2D, this.texture.id);
+    }
     this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.framebuffer.id);
     this.gl.drawArrays(this.gl.TRIANGLES, 0, this.vertexCount);
   }

@@ -2,6 +2,7 @@ import DummyFramebuffer from './gl/DummyFramebuffer';
 import Framebuffer from './gl/Framebuffer';
 import Texture from './gl/Texture';
 import Program from './gl/Program';
+import generatorFrag from './generator.frag';
 import simulatorFrag from './simulator.frag';
 import rendererFrag from './renderer.frag';
 
@@ -65,6 +66,16 @@ export default class GPUProcessing {
       name: 'simulator',
     });
 
+    this.generator = new Program({
+      gl: this.gl,
+      uniforms: {
+        u_chunkIndex: { value: [0, 0, 0], type: 'ivec3' },
+        u_chunkSize: { value: [voxelsSize.x, voxelsSize.y, voxelsSize.z], type: 'ivec3' },
+      },
+      fragmentSource: generatorFrag,
+      name: 'generator',
+    });
+
     const textureConfig = {
       gl: this.gl,
       size: { width: voxelsSize.x, height: voxelsSize.y * voxelsSize.z },
@@ -89,6 +100,7 @@ export default class GPUProcessing {
     this._assignTexturesAndFramebuffers();
     this.timestep = 0;
     this.simulationsPerFrame = 5;
+    this._generateWorld();
   }
 
   static _initializeGl(canvas) {
@@ -101,6 +113,7 @@ export default class GPUProcessing {
   }
 
   _assignTexturesAndFramebuffers() {
+    this.generator.setFramebuffer(this.framebuffer1);
     this.simulator.setTexture(this.texture1);
     this.simulator.setFramebuffer(this.framebuffer2);
     this.renderer.setTexture(this.texture2);
@@ -111,6 +124,10 @@ export default class GPUProcessing {
     [this.texture1, this.texture2] = [this.texture2, this.texture1];
     [this.framebuffer1, this.framebuffer2] = [this.framebuffer2, this.framebuffer1];
     this._assignTexturesAndFramebuffers();
+  }
+
+  _generateWorld() {
+    this.generator.render();
   }
 
   render() {
