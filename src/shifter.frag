@@ -2,8 +2,11 @@
 
 precision highp float;
 
+uniform ivec3 u_chunkShift;
 uniform ivec3 u_chunkIndex;
 uniform ivec3 u_chunkSize;
+uniform ivec3 u_worldSize;
+uniform sampler2D u_world;
 out vec4 fragColor;
 
 //
@@ -79,8 +82,7 @@ float snoise(vec2 v) {
 // END
 //
 
-
-vec4 getVoxel(vec3 cell) {
+vec4 generateVoxel(vec3 cell) {
   if (cell.y / float(u_chunkSize.y) < snoise(cell.xz / 100.) / 2. + 0.5) {
     return vec4(1, 0, 0, 0);
   }
@@ -90,12 +92,18 @@ vec4 getVoxel(vec3 cell) {
   return vec4(0);
 }
 
+vec4 getVoxel(vec3 p) {
+  // return generateVoxel(p);
+  ivec3 i = ivec3(p) - (u_chunkIndex - u_chunkShift) * u_chunkSize;
+  if (i.x < 0 || i.x >= u_worldSize.x || i.y < 0 || i.y >= u_worldSize.y || i.z < 0 || i.z >= u_worldSize.z) {
+    return generateVoxel(p);
+  }
+  return texelFetch(u_world, ivec2(i.x, i.z * u_worldSize.y + i.y), 0);
+}
+
 void main() {
   ivec2 px = ivec2(gl_FragCoord.xy);
   vec3 p = vec3(px.x, px.y % u_chunkSize.y, px.y / u_chunkSize.y);
-  fragColor = getVoxel(vec3(
-    p.x + float(u_chunkIndex.x * u_chunkSize.x),
-    p.y,
-    p.z + float(u_chunkIndex.z * u_chunkSize.z)
-  ));
+  p = p + vec3(u_chunkIndex * u_chunkSize);
+  fragColor = getVoxel(p);
 }

@@ -26,8 +26,8 @@ const OUTLINE = [
   {
     name: 'r_u_renderDistance',
     niceName: 'Render Distance',
-    value: 200,
-    max: 400,
+    value: 400,
+    max: 800,
     min: 50,
     step: 1,
     type: 'Bar',

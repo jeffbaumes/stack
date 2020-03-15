@@ -1,23 +1,13 @@
-import localforage from 'localforage';
 import Engine from './Engine';
 
-const worldSize = [256, 64, 256];
-
-const vox = new Float32Array(worldSize[0] * worldSize[1] * worldSize[2] * 4);
-
-async function loadVoxels() {
-  const voxels = await localforage.getItem('vox');
-  return voxels;
+async function init() {
+  window.engine = new Engine({
+    chunkSize: [32, 64, 32],
+    worldChunks: 8,
+    chunkShiftThreshold: 6,
+  });
+  await window.engine.processing.initializeWorld();
+  requestAnimationFrame(window.engine.boundRenderLoop);
 }
 
-loadVoxels().then((voxels) => {
-  window.engine = new Engine({
-    vox: voxels || vox,
-    worldSize,
-  });
-  requestAnimationFrame(window.engine.boundRenderLoop);
-});
-
-window.save = async () => {
-  await localforage.setItem('vox', window.engine.getVox());
-};
+init();

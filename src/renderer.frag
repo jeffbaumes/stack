@@ -6,6 +6,8 @@ precision highp sampler3D;
 uniform bool renderVoxelIndex;
 uniform ivec3 u_worldSize;
 uniform ivec2 u_canvasSize;
+uniform ivec3 u_worldChunkIndex;
+uniform ivec3 u_chunkSize;
 uniform bool u_reflection;
 uniform bool u_refraction;
 uniform bool u_ambientOcclusion;
@@ -15,7 +17,7 @@ uniform float u_waterAttenuationDistance;
 uniform float u_renderDistance;
 uniform int timestamp;
 uniform mat4 viewMatrixInverse;
-uniform vec3 eye;
+uniform vec3 u_eye;
 uniform sampler2D vox;
 out vec4 fragColor;
 
@@ -146,6 +148,8 @@ void main() {
     maxSamples = 1;
   }
   for (int s = 0; s < maxSamples; s += 1) {
+    // vec3 eye = u_eye + vec3(u_worldChunkIndex * u_chunkSize);
+    vec3 eye = u_eye;
     vec3 delta = normalize(pixel - eye);
     world = eye;
     vec3 c = blue;

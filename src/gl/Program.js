@@ -149,6 +149,10 @@ export default class Program {
     this.texture = texture;
   }
 
+  setSecondaryTexture(texture) {
+    this.secondaryTexture = texture;
+  }
+
   setFramebuffer(framebuffer) {
     this.framebuffer = framebuffer;
   }
@@ -163,7 +167,12 @@ export default class Program {
       drawingSize.height,
     );
     if (this.texture) {
+      this.gl.activeTexture(this.gl.TEXTURE0);
       this.gl.bindTexture(this.gl.TEXTURE_2D, this.texture.id);
+    }
+    if (this.secondaryTexture) {
+      this.gl.activeTexture(this.gl.TEXTURE1);
+      this.gl.bindTexture(this.gl.TEXTURE_2D, this.secondaryTexture.id);
     }
     this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.framebuffer.id);
     this.gl.drawArrays(this.gl.TRIANGLES, 0, this.vertexCount);

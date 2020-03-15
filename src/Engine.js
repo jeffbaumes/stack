@@ -6,7 +6,7 @@ import GPUProcessing from './GPUProcessing';
 glMatrix.setMatrixArrayType(Array);
 
 export default class Engine {
-  constructor({ vox, worldSize }) {
+  constructor({ chunkSize, worldChunks, chunkShiftThreshold }) {
     function resizeCanvas() {
       this.canvas.width = window.innerWidth / 2;
       this.canvas.height = window.innerHeight / 2;
@@ -27,7 +27,7 @@ export default class Engine {
           value: this.viewMatrixInverse,
           type: 'mat4',
         },
-        eye: {
+        u_eye: {
           value: this.eye,
           type: 'vec3',
         },
@@ -42,14 +42,13 @@ export default class Engine {
           type: 'int',
         },
       },
-      voxels: vox,
-      voxelsSize: { x: worldSize[0], y: worldSize[1], z: worldSize[2] },
+      chunkSize,
+      worldChunks,
+      chunkShiftThreshold,
     });
 
     this.ui = new GameUI(this);
 
-    this.vox = vox;
-    this.worldSize = worldSize;
     this.setUpMousetrap();
     this.setUpMouseEvents();
   }
@@ -80,10 +79,10 @@ export default class Engine {
     this.forward = [0, 0, -1];
     this.right = [1, 0, 0];
     this.up = [0, 1, 0];
-    this.eye = [0, 32, 0];
-    this.look = [0, 0, 0];
+    this.eye = [0, 64, 0];
+    this.look = [0, 0, -1];
     this.lookAt = [0, 0, 0];
-    this.playerSpeed = 20;
+    this.playerSpeed = 5;
     this.turnSpeed = 0.002;
     this.azimuth = 0;
     this.elevation = 0;
@@ -171,24 +170,30 @@ export default class Engine {
 
     vec3.add(this.eye, this.eye, this.movement);
 
-    vec3.add(this.lookAt, this.eye, this.look);
-    mat4.lookAt(this.viewMatrix, this.eye, this.lookAt, this.up);
-    const aspect = this.canvas.height / this.canvas.width;
-    mat4.frustum(this.frustum, -1, 1, -aspect, aspect, 2, 10);
-    mat4.mul(this.viewMatrix, this.frustum, this.viewMatrix);
-    mat4.invert(this.viewMatrixInverse, this.viewMatrix);
+    // Account for position in current world chunk
+    this.processing.updateWorldChunkPosition(this.eye).then(() => {
+      const chunkEye = this.processing.worldPositionToWorldChunkPosition(this.eye);
 
-    this.processing.renderer.updateUniforms({
-      canvasWidth: this.canvas.width,
-      canvasHeight: this.canvas.height,
-      viewMatrixInverse: this.viewMatrixInverse,
-      eye: this.eye,
-      timestamp,
+      // Compute view matrix
+      vec3.add(this.lookAt, chunkEye, this.look);
+      mat4.lookAt(this.viewMatrix, chunkEye, this.lookAt, this.up);
+      const aspect = this.canvas.height / this.canvas.width;
+      mat4.frustum(this.frustum, -1, 1, -aspect, aspect, 2, 10);
+      mat4.mul(this.viewMatrix, this.frustum, this.viewMatrix);
+      mat4.invert(this.viewMatrixInverse, this.viewMatrix);
+
+      this.processing.renderer.updateUniforms({
+        canvasWidth: this.canvas.width,
+        canvasHeight: this.canvas.height,
+        viewMatrixInverse: this.viewMatrixInverse,
+        u_eye: chunkEye,
+        timestamp,
+      });
+
+      this.processing.render();
+
+      requestAnimationFrame(this.boundRenderLoop);
     });
-
-    this.processing.render();
-
-    requestAnimationFrame(this.boundRenderLoop);
   }
 
   getVox() {
