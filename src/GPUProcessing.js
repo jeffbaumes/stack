@@ -65,16 +65,6 @@ export default class GPUProcessing {
       name: 'simulator',
     });
 
-    // this.generator = new Program({
-    //   gl: this.gl,
-    //   uniforms: {
-    //     u_chunkIndex: { value: [0, 0, 0], type: 'ivec3' },
-    //     u_chunkSize: { value: this.chunkSize, type: 'ivec3' },
-    //   },
-    //   fragmentSource: generatorFrag,
-    //   name: 'generator',
-    // });
-
     this.shifter = new Program({
       gl: this.gl,
       uniforms: {
@@ -86,29 +76,6 @@ export default class GPUProcessing {
       fragmentSource: shifterFrag,
       name: 'shifter',
     });
-
-    // this.chunkLoader = new Program({
-    //   gl: this.gl,
-    //   uniforms: {
-    //     u_location: { value: [0, 0, 0], type: 'ivec3' },
-    //     u_chunkSize: { value: this.chunkSize, type: 'ivec3' },
-    //     u_worldSize: { value: this.worldSize, type: 'ivec3' },
-    //     u_world: { value: 0, type: 'int' }, // primary texture
-    //     u_chunk: { value: 1, type: 'int' }, // secondary texture
-    //   },
-    //   fragmentSource: chunkLoaderFrag,
-    //   name: 'chunkLoader',
-    // });
-
-    // this.chunkTexture = new Texture({
-    //   gl: this.gl,
-    //   size: {
-    //     width: this.chunkSize[0],
-    //     height: this.chunkSize[1] * this.chunkSize[2],
-    //   },
-    //   data: new Float32Array(this.chunkSize[0] * this.chunkSize[1] * this.chunkSize[2] * 4),
-    // });
-    // this.chunkFramebuffer = new Framebuffer({ gl: this.gl, texture: this.chunkTexture });
 
     const textureConfig = {
       gl: this.gl,
@@ -158,10 +125,6 @@ export default class GPUProcessing {
   }
 
   _assignTexturesAndFramebuffers() {
-    // this.generator.setFramebuffer(this.chunkFramebuffer);
-    // this.chunkLoader.setTexture(this.texture1);
-    // this.chunkLoader.setSecondaryTexture(this.chunkTexture);
-    // this.chunkLoader.setFramebuffer(this.framebuffer2);
     this.shifter.setTexture(this.texture1);
     this.shifter.setFramebuffer(this.framebuffer2);
     this.simulator.setTexture(this.texture1);
@@ -175,24 +138,6 @@ export default class GPUProcessing {
     [this.framebuffer1, this.framebuffer2] = [this.framebuffer2, this.framebuffer1];
     this._assignTexturesAndFramebuffers();
   }
-
-  // _generateWorld() {
-  //   this.renderer.updateUniforms({ u_worldChunkIndex: this.worldChunkIndex });
-  //   for (let x = 0; x < this.worldChunks; x += 1) {
-  //     for (let z = 0; z < this.worldChunks; z += 1) {
-  //       const chunkIndex = [
-  //         this.worldChunkIndex[0] + x,
-  //         this.worldChunkIndex[1],
-  //         this.worldChunkIndex[2] + z,
-  //       ];
-  //       this.generator.updateUniforms({ u_chunkIndex: chunkIndex });
-  //       this.generator.render();
-  //       this.chunkLoader.updateUniforms({ u_location: [x, 0, z] });
-  //       this.chunkLoader.render();
-  //       this._swapTexturesAndFramebuffers();
-  //     }
-  //   }
-  // }
 
   worldPositionToWorldChunkPosition(pos) {
     const chunkOffset = [0, 0, 0];
@@ -245,8 +190,6 @@ export default class GPUProcessing {
           const wx = cx + chunkX * chunkSize[0];
           const wy = cy;
           const wz = cz + chunkZ * chunkSize[2];
-          // const chunkIndex = 4 * (cx * chunkSize[1] * chunkSize[2] + cz * chunkSize[1] + cy);
-          // const worldIndex = 4 * (wx * worldSize[1] * worldSize[2] + wz * worldSize[1] + cy);
           const chunkIndex = 4 * (cz * chunkSize[0] * chunkSize[1] + cy * chunkSize[0] + cx);
           const worldIndex = 4 * (wz * worldSize[0] * worldSize[1] + wy * worldSize[0] + wx);
           worldBuffer[worldIndex + 0] = chunkBuffer[chunkIndex + 0];
